@@ -27,15 +27,318 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        style={{ background: 'linear-gradient(120deg, #f8fafc 0%, #e0e7ff 100%)' }}
       >
-        <div>
-          <h1>Welcome to My Website</h1>
-          <Link href="/">Home</Link> |
-          <Link href="/about">Go to About Page</Link> |
-          <Link href="/contact">Go to Contact Page</Link> | 
-          <Link href="/student">Go to Student Page</Link> 
+        <nav className="sticky top-0 z-30 px-8 py-5 bg-gradient-to-r from-white/90 via-blue-50 to-white/90 border-b border-blue-200 shadow-2xl rounded-b-3xl flex items-center justify-between backdrop-blur-xl animate-navbar-fade">
+          <div className="flex items-center gap-7">
+            <Link
+              href="/"
+              className="flex items-center gap-3 font-extrabold text-3xl text-blue-700 drop-shadow-xl tracking-wider hover:scale-110 transition-transform duration-300 group"
+              aria-label="MultiKart Home"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-12 h-12 text-yellow-400 animate-pulse drop-shadow-lg"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V15.75c0-.621.504-1.125 1.125-1.125h1.5c.621 0 1.125.504 1.125 1.125v4.125c0 .621.504 1.125 1.125 1.125h3.75c.621 0 1.125-.504 1.125-1.125V9.75"
+                />
+              </svg>
+              <span className="bg-gradient-to-r from-blue-600 via-blue-400 to-yellow-400 bg-clip-text text-transparent group-hover:tracking-widest transition-all duration-300 relative overflow-hidden">
+                <span className="inline-block group-hover:animate-shimmer">MultiKart</span>
+                <span className="absolute left-0 top-0 w-full h-full bg-gradient-to-r from-transparent via-white/60 to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer-glow" />
+              </span>
+            </Link>
+            <div className="hidden md:flex gap-7 ml-12 items-center">
+              <div className="relative group">
+                <button className="px-4 py-2 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 hover:text-blue-900 transition-all duration-200 shadow-sm flex items-center gap-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300" aria-haspopup="true" aria-expanded="false">
+                  Categories
+                  <svg className="w-4 h-4 transition-transform group-hover:rotate-180" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                </button>
+                <div className="absolute left-0 mt-3 w-64 bg-white/80 border border-blue-100 rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-300 z-30 scale-95 group-hover:scale-100 p-3 grid grid-cols-2 gap-2 translate-y-2 group-hover:translate-y-0 backdrop-blur-xl animate-dropdown-fade">
+                  <Link href="/category/electronics" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300">
+                    <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17.25v-1.5A2.25 2.25 0 0112 13.5h0a2.25 2.25 0 012.25 2.25v1.5m-4.5 0h4.5m-4.5 0a2.25 2.25 0 01-2.25-2.25v-6A2.25 2.25 0 0112 6.75h0a2.25 2.25 0 012.25 2.25v6a2.25 2.25 0 01-2.25 2.25z"/></svg>
+                    Electronics
+                  </Link>
+                  <Link href="/category/fashion" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300">
+                    <svg className="w-5 h-5 text-pink-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.75 19.25l7.25-14.5 7.25 14.5M9.75 19.25v-4.5a2.25 2.25 0 014.5 0v4.5"/></svg>
+                    Fashion
+                  </Link>
+                  <Link href="/category/home" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300">
+                    <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l9-9 9 9M4.5 10.5v9a1.5 1.5 0 001.5 1.5h3.75a1.5 1.5 0 001.5-1.5v-4.5a1.5 1.5 0 011.5-1.5h1.5a1.5 1.5 0 011.5 1.5v4.5a1.5 1.5 0 001.5 1.5h3.75a1.5 1.5 0 001.5-1.5v-9"/></svg>
+                    Home & Living
+                  </Link>
+                  <Link href="/category/sports" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300">
+                    <svg className="w-5 h-5 text-orange-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 2v20M2 12h20"/></svg>
+                    Sports
+                  </Link>
+                  <Link href="/category/beauty" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300">
+                    <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 22c4.418 0 8-4.03 8-9 0-3.866-3.134-7-7-7S4 9.134 4 13c0 4.97 3.582 9 8 9z"/></svg>
+                    Beauty
+                  </Link>
+                  <Link href="/category/books" className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300">
+                    <svg className="w-5 h-5 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6v6l4 2"/><rect width="20" height="14" x="2" y="5" rx="2"/></svg>
+                    Books
+                  </Link>
+                </div>
+              </div>
+              <Link
+                href="/shop"
+                className="px-4 py-2 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 hover:text-blue-900 transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-300"
+              >
+                Shop
+              </Link>
+              <Link
+                href="/about"
+                className="px-4 py-2 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 hover:text-blue-900 transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-300"
+              >
+                About
+              </Link>
+              <Link
+                href="/contact"
+                className="px-4 py-2 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 hover:text-blue-900 transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-blue-300"
+              >
+                Contact
+              </Link>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <form className="hidden md:flex items-center bg-white/80 rounded-xl px-3 py-1 shadow-inner focus-within:ring-2 focus-within:ring-blue-300 transition-all">
+              <input
+                type="text"
+                placeholder="Search products..."
+                className="outline-none px-2 py-1 rounded-l-xl text-blue-700 w-40 md:w-56 bg-transparent"
+              />
+              <button type="submit" className="p-1 text-blue-600 hover:text-yellow-400 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+                </svg>
+              </button>
+            </form>
+            <Link
+              href="/cart"
+              className="relative group hover:scale-110 transition-transform"
+              aria-label="Cart"
+            >
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-yellow-400 text-blue-900 text-xs rounded px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 shadow">Cart</span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+                className="w-9 h-9 text-blue-700 group-hover:text-yellow-400 drop-shadow"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437m0 0L7.5 15.75m-2.394-9.478h13.635c.889 0 1.542.86 1.346 1.725l-1.5 6A1.5 1.5 0 0117.115 16.5H8.385a1.5 1.5 0 01-1.456-1.225l-1.5-6A1.125 1.125 0 014.5 7.5z"
+                />
+              </svg>
+              <span className="absolute -top-2 -right-2 bg-yellow-400 text-blue-900 text-xs font-bold rounded-full px-2 py-0.5 border-2 border-white shadow animate-bounce">0</span>
+            </Link>
+            <Link
+              href="/wishlist"
+              className="relative group hover:scale-110 transition-transform"
+              aria-label="Wishlist"
+            >
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-pink-500 text-white text-xs rounded px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 shadow">Wishlist</span>
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-8 h-8 text-pink-500 group-hover:text-pink-700 drop-shadow" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21.8 7.6c0-2.5-2-4.5-4.5-4.5-1.5 0-2.8.7-3.6 1.8C12.5 3.8 11.2 3.1 9.7 3.1c-2.5 0-4.5 2-4.5 4.5 0 4.2 7.1 9.1 7.1 9.1s7.1-4.9 7.1-9.1z" />
+              </svg>
+              <span className="absolute -top-2 -right-2 bg-pink-400 text-white text-xs font-bold rounded-full px-1.5 py-0.5 border-2 border-white shadow animate-pulse">0</span>
+            </Link>
+            <div className="relative group">
+              <button className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-100/60 hover:bg-blue-200/80 text-blue-700 font-semibold shadow transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-300" aria-haspopup="true" aria-expanded="false">
+                <span className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-blue-100 to-yellow-100 flex items-center justify-center text-blue-700 font-bold mr-2 border border-blue-200 shadow-inner">U</span>
+                <span className="hidden md:inline">Account</span>
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                  className="w-6 h-6"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z"
+                  />
+                </svg>
+              </button>
+              <div className="absolute right-0 mt-2 w-56 bg-white/95 border rounded-2xl shadow-2xl opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto transition-all duration-200 z-10 scale-95 group-hover:scale-100 overflow-hidden animate-dropdown-fade">
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 px-6 py-3 hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25V9m7.5 0v10.5A2.25 2.25 0 0113.5 21h-3a2.25 2.25 0 01-2.25-2.25V9m7.5 0h-10.5" />
+                  </svg>
+                  Login
+                </Link>
+                <Link
+                  href="/register"
+                  className="flex items-center gap-2 px-6 py-3 hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75A2.25 2.25 0 0014.25 4.5h-4.5A2.25 2.25 0 007.5 6.75v3.75m9 0v6.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25v-6.75m9 0h-10.5" />
+                  </svg>
+                  Register
+                </Link>
+                <Link
+                  href="/profile"
+                  className="flex items-center gap-2 px-6 py-3 hover:bg-blue-50 text-blue-700 transition font-medium focus-visible:ring-2 focus-visible:ring-blue-300"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" />
+                  </svg>
+                  Profile
+                </Link>
+              </div>
+            </div>
+          </div>
+        </nav>
+        {/* Mobile nav */}
+        <div className="md:hidden flex flex-col items-center bg-white/70 backdrop-blur-lg shadow rounded-b-2xl border-b sticky top-0 z-20">
+          <form className="flex items-center bg-white/90 rounded-xl px-3 py-1 shadow-inner mt-2 mb-1 w-11/12">
+            <input
+              type="text"
+              placeholder="Search products..."
+              className="outline-none px-2 py-1 rounded-l-xl text-blue-700 w-full bg-transparent"
+            />
+            <button type="submit" className="p-1 text-blue-600 hover:text-yellow-400 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-5 h-5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
+              </svg>
+            </button>
+          </form>
+          <div className="flex gap-6 py-2">
+            <Link
+              href="/shop"
+              className="px-4 py-2 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 hover:text-blue-900 transition-all duration-200 shadow-sm"
+            >
+              Shop
+            </Link>
+            <Link
+              href="/about"
+              className="px-4 py-2 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 hover:text-blue-900 transition-all duration-200 shadow-sm"
+            >
+              About
+            </Link>
+            <Link
+              href="/contact"
+              className="px-4 py-2 rounded-xl text-blue-700 font-semibold hover:bg-blue-100 hover:text-blue-900 transition-all duration-200 shadow-sm"
+            >
+              Contact
+            </Link>
+          </div>
         </div>
         {children}
+        {/* Footer */}
+        <footer className="bg-white border-t border-gray-200 mt-16 pt-12 pb-6 text-gray-700 text-sm">
+          <div className="max-w-7xl mx-auto px-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-8 pb-10 border-b border-gray-100">
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <svg className="w-10 h-10 mb-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75V6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v3"/><path strokeLinecap="round" strokeLinejoin="round" d="M3 9.75l9 6.75 9-6.75"/></svg>
+                <div className="font-semibold">Free Shipping</div>
+                <div className="text-xs text-gray-500">For all Orders Over $100</div>
+              </div>
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <svg className="w-10 h-10 mb-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 12h-15"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 19.5V4.5"/></svg>
+                <div className="font-semibold">30 Days Returns</div>
+                <div className="text-xs text-gray-500">For an Exchange Product</div>
+              </div>
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <svg className="w-10 h-10 mb-2 text-red-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="18" height="14" x="3" y="5" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M3 7l9 6 9-6"/></svg>
+                <div className="font-semibold">Secured Payment</div>
+                <div className="text-xs text-gray-500">Payment Cards Accepted</div>
+              </div>
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <svg className="w-10 h-10 mb-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10"/></svg>
+                <div className="font-semibold">Special Gifts</div>
+                <div className="text-xs text-gray-500">Our First Product Order</div>
+              </div>
+              <div className="flex flex-col items-center md:items-start text-center md:text-left">
+                <svg className="w-10 h-10 mb-2 text-gray-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M18 10.5V6.75A2.25 2.25 0 0015.75 4.5h-7.5A2.25 2.25 0 006 6.75v3.75"/><path strokeLinecap="round" strokeLinejoin="round" d="M12 15.75v.008h.008V15.75H12z"/></svg>
+                <div className="font-semibold">Support 24/7</div>
+                <div className="text-xs text-gray-500">Contact us Anytime</div>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-8 py-10">
+              <div>
+                <div className="font-bold text-lg mb-2">Contact us</div>
+                <div>Classyshop - Mega Super Store</div>
+                <div>507-Union Trade Centre France</div>
+                <div className="mt-2 text-sm text-gray-500">sales@yourcompany.com</div>
+                <div className="mt-2 text-2xl text-red-400 font-bold">(+91) 9876-543-210</div>
+                <div className="mt-2 flex items-center gap-2 text-gray-700 font-medium">
+                  <svg className="w-5 h-5 text-red-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="20" height="16" x="2" y="4" rx="2"/><path strokeLinecap="round" strokeLinejoin="round" d="M8 10h.01M16 10h.01"/></svg>
+                  Online Chat Get Expert Help
+                </div>
+              </div>
+              <div>
+                <div className="font-bold text-lg mb-2">Products</div>
+                <ul className="space-y-1">
+                  <li><Link href="#" className="hover:text-blue-600">Prices drop</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">New products</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Best sales</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Contact us</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Sitemap</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Stores</Link></li>
+                </ul>
+              </div>
+              <div>
+                <div className="font-bold text-lg mb-2">Our company</div>
+                <ul className="space-y-1">
+                  <li><Link href="#" className="hover:text-blue-600">Delivery</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Legal Notice</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Terms and conditions of use</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">About us</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Secure payment</Link></li>
+                  <li><Link href="#" className="hover:text-blue-600">Login</Link></li>
+                </ul>
+              </div>
+              <div>
+                <div className="font-bold text-lg mb-2">Subscribe to newsletter</div>
+                <div className="text-gray-500 mb-3">Subscribe to our latest newsletter to get news about special discounts.</div>
+                <form className="flex flex-col gap-2">
+                  <input type="email" placeholder="Your Email Address" className="border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-200" />
+                  <button type="submit" className="bg-red-400 text-white font-bold py-2 rounded hover:bg-red-500 transition">SUBSCRIBE</button>
+                  <label className="flex items-center gap-2 text-xs mt-1">
+                    <input type="checkbox" className="border rounded" />
+                    I agree to the terms and conditions and the privacy policy
+                  </label>
+                </form>
+              </div>
+            </div>
+            <div className="flex flex-col md:flex-row md:justify-between items-center border-t border-gray-100 pt-6 mt-6 gap-4">
+              <div className="flex gap-4 text-gray-400 text-2xl">
+                <a href="#" aria-label="Facebook"><svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg></a>
+                <a href="#" aria-label="YouTube"><svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="5" rx="2"/><path d="M10 9l5 3-5 3V9z"/></svg></a>
+                <a href="#" aria-label="Pinterest"><svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M8 15c1.333-2 4.667-2 6 0"/></svg></a>
+                <a href="#" aria-label="Instagram"><svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="4"/><circle cx="12" cy="12" r="4"/></svg></a>
+              </div>
+              <div className="text-gray-400 text-sm">MultiKart © 2024 - Ecommerce Template</div>
+              {/* <div className="flex gap-2">
+                <img src="/payment-cb.png" alt="CB" className="h-6" />
+                <img src="/payment-visa.png" alt="Visa" className="h-6" />
+                <img src="/payment-mastercard.png" alt="Mastercard" className="h-6" />
+                <img src="/payment-amex.png" alt="Amex" className="h-6" />
+                <img src="/payment-paypal.png" alt="Paypal" className="h-6" />
+              </div> */}
+            </div>
+          </div>
+        </footer>
+        
       </body>
     </html>
   );
