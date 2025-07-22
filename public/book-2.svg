@@ -1,0 +1,20 @@
+<svg width="300" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#10b981;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="400" fill="url(#grad2)" rx="10"/>
+  <rect x="15" y="15" width="270" height="370" fill="none" stroke="#ffffff" stroke-width="2" rx="5"/>
+  <text x="150" y="70" text-anchor="middle" fill="#ffffff" font-family="serif" font-size="20" font-weight="bold">Digital</text>
+  <text x="150" y="100" text-anchor="middle" fill="#ffffff" font-family="serif" font-size="20" font-weight="bold">Transformation</text>
+  <text x="150" y="150" text-anchor="middle" fill="#dcfce7" font-family="sans-serif" font-size="12">Understanding the impact of</text>
+  <text x="150" y="170" text-anchor="middle" fill="#dcfce7" font-family="sans-serif" font-size="12">digital technology on</text>
+  <text x="150" y="190" text-anchor="middle" fill="#dcfce7" font-family="sans-serif" font-size="12">modern society</text>
+  <text x="150" y="340" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="14">Prof. Michael Chen</text>
+  <rect x="120" y="220" width="60" height="60" fill="none" stroke="#ffffff" stroke-width="2" rx="5"/>
+  <circle cx="135" cy="235" r="5" fill="#ffffff"/>
+  <circle cx="165" cy="235" r="5" fill="#ffffff"/>
+  <rect x="130" y="250" width="40" height="20" fill="#ffffff"/>
+</svg>

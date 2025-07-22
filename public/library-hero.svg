@@ -1,0 +1,59 @@
+<svg width="1920" height="1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0f172a;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#1e293b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#334155;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+  
+  <!-- Library shelves -->
+  <g opacity="0.3">
+    <rect x="0" y="200" width="1920" height="60" fill="#4a5568"/>
+    <rect x="0" y="400" width="1920" height="60" fill="#4a5568"/>
+    <rect x="0" y="600" width="1920" height="60" fill="#4a5568"/>
+    <rect x="0" y="800" width="1920" height="60" fill="#4a5568"/>
+  </g>
+  
+  <!-- Books on shelves -->
+  <g opacity="0.4">
+    <!-- Top shelf books -->
+    <rect x="50" y="210" width="25" height="40" fill="#ef4444"/>
+    <rect x="75" y="210" width="20" height="40" fill="#3b82f6"/>
+    <rect x="95" y="210" width="30" height="40" fill="#10b981"/>
+    <rect x="125" y="210" width="22" height="40" fill="#f59e0b"/>
+    <rect x="147" y="210" width="28" height="40" fill="#8b5cf6"/>
+    
+    <!-- Middle shelf books -->
+    <rect x="200" y="410" width="24" height="40" fill="#06b6d4"/>
+    <rect x="224" y="410" width="26" height="40" fill="#ec4899"/>
+    <rect x="250" y="410" width="20" height="40" fill="#84cc16"/>
+    <rect x="270" y="410" width="32" height="40" fill="#f97316"/>
+    
+    <!-- Bottom shelf books -->
+    <rect x="400" y="610" width="25" height="40" fill="#6366f1"/>
+    <rect x="425" y="610" width="23" height="40" fill="#14b8a6"/>
+    <rect x="448" y="610" width="27" height="40" fill="#f43f5e"/>
+    <rect x="475" y="610" width="21" height="40" fill="#a855f7"/>
+  </g>
+  
+  <!-- Floating particles/dust -->
+  <g opacity="0.6">
+    <circle cx="300" cy="150" r="2" fill="#fbbf24"/>
+    <circle cx="800" cy="250" r="1.5" fill="#60a5fa"/>
+    <circle cx="1200" cy="180" r="1" fill="#34d399"/>
+    <circle cx="600" cy="320" r="2.5" fill="#f472b6"/>
+    <circle cx="1000" cy="400" r="1.8" fill="#a78bfa"/>
+    <circle cx="1500" cy="280" r="1.2" fill="#fb7185"/>
+  </g>
+  
+  <!-- Central light effect -->
+  <circle cx="960" cy="540" r="400" fill="url(#light)" opacity="0.1"/>
+  <defs>
+    <radialGradient id="light">
+      <stop offset="0%" style="stop-color:#fbbf24;stop-opacity:0.8" />
+      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:0" />
+    </radialGradient>
+  </defs>
+</svg>

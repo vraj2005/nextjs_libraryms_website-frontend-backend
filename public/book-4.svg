@@ -1,0 +1,19 @@
+<svg width="300" height="400" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad4" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#f59e0b;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#fbbf24;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="300" height="400" fill="url(#grad4)" rx="10"/>
+  <rect x="15" y="15" width="270" height="370" fill="none" stroke="#ffffff" stroke-width="2" rx="5"/>
+  <text x="150" y="70" text-anchor="middle" fill="#ffffff" font-family="serif" font-size="22" font-weight="bold">Modern</text>
+  <text x="150" y="100" text-anchor="middle" fill="#ffffff" font-family="serif" font-size="22" font-weight="bold">Literature</text>
+  <text x="150" y="150" text-anchor="middle" fill="#fef3c7" font-family="sans-serif" font-size="12">A collection of</text>
+  <text x="150" y="170" text-anchor="middle" fill="#fef3c7" font-family="sans-serif" font-size="12">contemporary literary</text>
+  <text x="150" y="190" text-anchor="middle" fill="#fef3c7" font-family="sans-serif" font-size="12">works and analysis</text>
+  <text x="150" y="340" text-anchor="middle" fill="#ffffff" font-family="sans-serif" font-size="14">James Patterson</text>
+  <path d="M120 230 Q150 210 180 230 Q150 250 120 230" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <circle cx="140" cy="230" r="3" fill="#ffffff"/>
+  <circle cx="160" cy="230" r="3" fill="#ffffff"/>
+</svg>
