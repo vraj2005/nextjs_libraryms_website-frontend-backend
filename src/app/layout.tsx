@@ -96,12 +96,6 @@ export default function RootLayout({
                 Books
               </Link>
               <Link
-                href="/borrowed"
-                className="px-3 md:px-4 py-2 rounded-xl text-sky-700 font-semibold hover:bg-sky-100 hover:text-sky-900 transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base"
-              >
-                Borrow
-              </Link>
-              <Link
                 href="/about"
                 className="px-3 md:px-4 py-2 rounded-xl text-sky-700 font-semibold hover:bg-sky-100 hover:text-sky-900 transition-all duration-200 shadow-sm focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base"
               >
@@ -129,27 +123,27 @@ export default function RootLayout({
               </button>
             </form>
             <Link
-              href="/borrowed"
+              href="/notifications"
               className="relative group hover:scale-110 transition-transform"
-              aria-label="Borrowed Books"
+              aria-label="Notifications"
             >
-              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-amber-400 text-sky-900 text-xs rounded px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 shadow whitespace-nowrap">My Books</span>
+              <span className="absolute -top-5 left-1/2 -translate-x-1/2 bg-blue-500 text-white text-xs rounded px-2 py-0.5 opacity-0 group-hover:opacity-100 transition-all pointer-events-none z-20 shadow whitespace-nowrap">Notifications</span>
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
                 viewBox="0 0 24 24"
                 strokeWidth={2}
                 stroke="currentColor"
-                className="w-6 h-6 md:w-8 md:h-8 text-sky-700 group-hover:text-amber-500 drop-shadow"
+                className="w-6 h-6 md:w-8 md:h-8 text-sky-700 group-hover:text-blue-500 drop-shadow"
                 aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"
+                  d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
                 />
               </svg>
-              <span className="absolute -top-2 -right-2 bg-amber-500 text-sky-900 text-xs font-bold rounded-full px-1.5 py-0.5 border-2 border-white shadow animate-bounce">3</span>
+              <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 border-2 border-white shadow animate-pulse">2</span>
             </Link>
             <Link
               href="/favorites"
@@ -182,15 +176,24 @@ export default function RootLayout({
                 </svg>
               </button>
               <div className="absolute right-0 mt-3 w-48 md:w-56 bg-white/95 border rounded-2xl shadow-2xl opacity-0 invisible group-hover:opacity-100 group-hover:visible pointer-events-none group-hover:pointer-events-auto transition-all duration-700 ease-out z-10 scale-90 group-hover:scale-100 overflow-hidden translate-y-4 group-hover:translate-y-0 backdrop-blur-xl ring-1 ring-sky-200/50">
-                {/* <Link
+                <Link
                   href="/profile"
                   className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-purple-400"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-purple-600">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" />
                   </svg>
-                  <span className="group-hover/item:text-purple-900 transition-colors duration-200">Profile</span>
-                </Link> */}
+                  <span className="group-hover/item:text-purple-600 transition-colors duration-200">Profile</span>
+                </Link>
+                <Link
+                  href="/borrowed"
+                  className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-amber-400"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-amber-600">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                  </svg>
+                  <span className="group-hover/item:text-amber-600 transition-colors duration-200">My Books</span>
+                </Link>
                 <Link
                   href="/login"
                   className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-sky-400"
@@ -208,15 +211,6 @@ export default function RootLayout({
                     <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75A2.25 2.25 0 0014.25 4.5h-4.5A2.25 2.25 0 007.5 6.75v3.75m9 0v6.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25v-6.75m9 0h-10.5" />
                   </svg>
                   <span className="group-hover/item:text-green-600 transition-colors duration-200">Register</span>
-                </Link>
-                <Link
-                  href="/profile"
-                  className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-purple-400"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-purple-600">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" />
-                  </svg>
-                  <span className="group-hover/item:text-purple-600 transition-colors duration-200">Profile</span>
                 </Link>
               </div>
             </div>
