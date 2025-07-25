@@ -12,7 +12,7 @@ const slides = [
     description: "Discover thousands of books, journals, and digital resources available 24/7. Your journey to knowledge starts here.",
     bgImage: "/library-interior.svg",
     cta: "Browse Collection",
-    ctaLink: "/browse"
+    ctaLink: "/books"
   },
   {
     id: 2,
@@ -64,21 +64,21 @@ const categories = [
   },
   {
     id: 4,
-    name: "Science",
+    name: "Journals",
     description: "Research & scientific journals",
-    icon: "🔬",
+    icon: "�",
     count: "1,550",
-    color: "from-teal-400 to-teal-600",
-    link: "/category/science"
+    color: "from-orange-400 to-orange-600",
+    link: "/category/journals"
   },
   {
     id: 5,
-    name: "Technology",
-    description: "IT, programming & innovation",
+    name: "Digital Books",
+    description: "E-books & digital resources",
     icon: "💻",
     count: "980",
-    color: "from-indigo-400 to-indigo-600",
-    link: "/category/technology"
+    color: "from-pink-400 to-pink-600",
+    link: "/category/digital"
   },
   {
     id: 6,
