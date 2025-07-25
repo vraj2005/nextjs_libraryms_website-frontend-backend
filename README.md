@@ -5,7 +5,7 @@ A modern, comprehensive library management system built with Next.js 15, TypeScr
 ## 🌟 Features
 
 ### 🎯 User Features
-- **Book Catalog**: Browse extensive collection with advanced search and filtering
+- **Book Catalog**: Browse extensive collection with advanced search and 
 - **User Authentication**: Secure login and registration system
 - **Book Management**: Borrow, return, and renew books with automated due date tracking
 - **Favorites System**: Save and manage favorite books
