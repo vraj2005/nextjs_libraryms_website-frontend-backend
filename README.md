@@ -51,7 +51,7 @@ A modern, comprehensive library management system built with Next.js 15, TypeScr
 1. **Clone the repository**
    ```bash
    git clone https://github.com/vraj2005/nextjs_libraryms_website.git
-   cd nextjs_libraryms_website
+│       ├── layout_new.tsx # This file is no longer used as a backup layout component.
    ```
 
 2. **Install dependencies**
@@ -77,13 +77,8 @@ A modern, comprehensive library management system built with Next.js 15, TypeScr
 
 ## 📁 Project Structure
 
-```
-nextjs_libraryms_website/
-├── public/                 # Static assets
-│   ├── *.svg              # Book icons and illustrations
 │   └── favicon.ico        # Website favicon
 ├── src/
-│   └── app/               # Next.js App Router
 │       ├── globals.css    # Global styles
 │       ├── layout.tsx     # Root layout component
 │       ├── page.tsx       # Home page with carousel
