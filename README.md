@@ -76,7 +76,6 @@ A modern, comprehensive library management system built with Next.js 15, TypeScr
    Navigate to [http://localhost:3000](http://localhost:3000) to see the application.
 
 ## 📁 Project Structure
-
 │   └── favicon.ico        # Website favicon
 ├── src/
 │       ├── globals.css    # Global styles
@@ -102,6 +101,38 @@ A modern, comprehensive library management system built with Next.js 15, TypeScr
 ├── tsconfig.json          # TypeScript configuration
 ├── next.config.ts         # Next.js configuration
 └── README.md              # Project documentation
+```
+
+```
+nextjs_libraryms_website/
+├── public/                  # Static assets
+│   ├── *.svg                # Book icons and illustrations
+│   └── favicon.ico          # Website favicon
+├── src/
+│   └── app/                 # Next.js App Router
+│       ├── globals.css      # Global styles
+│       ├── layout.tsx       # Root layout component
+│       ├── page.tsx         # Home page with carousel
+│       ├── about/           # About page
+│       ├── admin/           # Admin dashboard
+│       │   ├── books/       # Book management
+│       │   ├── dashboard/   # Admin dashboard
+│       │   ├── login/       # Admin authentication
+│       │   ├── members/     # Member management
+│       │   ├── reports/     # Analytics and reports
+│       │   └── transactions/# Transaction tracking
+│       ├── books/           # Book catalog
+│       ├── borrowed/        # Borrowed books management
+│       ├── contact/         # Contact information
+│       ├── favorites/       # User favorites
+│       ├── login/           # User authentication
+│       ├── profile/         # User profile
+│       └── register/        # User registration
+├── package.json             # Dependencies and scripts
+├── tailwind.config.ts       # Tailwind CSS configuration
+├── tsconfig.json            # TypeScript configuration
+├── next.config.ts           # Next.js configuration
+└── README.md                # Project documentation
 ```
 
 ## 🔧 Available Scripts
