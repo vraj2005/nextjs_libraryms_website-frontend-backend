@@ -31,7 +31,7 @@ A modern, comprehensive library management system built with Next.js 15, TypeScr
 
 ## 🛠️ Technology Stack
 
-- **Framework**: Next.js 15.3.3 with App 
+- **Framework**: Next.js 15.3.3 with App Router
 - **Language**: TypeScript 5.x
 - **Styling**: Tailwind CSS 4.x
 - **Icons**: Lucide React
