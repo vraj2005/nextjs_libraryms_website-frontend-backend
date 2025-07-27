@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
+import { getUserFromToken } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
@@ -101,5 +102,55 @@ export async function GET(request: NextRequest) {
       { error: 'Internal server error' },
       { status: 500 }
     )
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user || user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const data = await request.json();
+    const book = await prisma.book.create({ data });
+    return NextResponse.json({ book });
+  } catch (error) {
+    console.error('Error creating book:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest) {
+  try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user || user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const data = await request.json();
+    if (!data.id) return NextResponse.json({ error: 'Book ID required' }, { status: 400 });
+    const book = await prisma.book.update({ where: { id: data.id }, data });
+    return NextResponse.json({ book });
+  } catch (error) {
+    console.error('Error updating book:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const token = request.headers.get('authorization')?.replace('Bearer ', '');
+    const user = token ? await getUserFromToken(token) : null;
+    if (!user || user.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+    const { id } = await request.json();
+    if (!id) return NextResponse.json({ error: 'Book ID required' }, { status: 400 });
+    await prisma.book.delete({ where: { id } });
+    return NextResponse.json({ success: true });
+  } catch (error) {
+    console.error('Error deleting book:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -3,69 +3,47 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 
-// Sample books data (extended from main books)
-const allBooks = [
-	{
-		id: 1,
-		title: "The Great Library",
-		author: "Dr. Elena Richardson",
-		category: "Academic",
-		image: "/book-1.svg",
-		isbn: "978-0-123456-78-9",
-		publishYear: 2023,
-		status: "Available",
-		copies: 5,
-		available: 3,
-		borrowed: 2,
-		reserved: 0,
-		callNumber: "020.1 RIC",
-		location: "Section A - Floor 2",
-		price: "₹2,850",
-		addedDate: "2024-01-15",
-	},
-	{
-		id: 2,
-		title: "Digital Transformation",
-		author: "Prof. Michael Chen",
-		category: "Technology",
-		image: "/book-2.svg",
-		isbn: "978-0-987654-32-1",
-		publishYear: 2024,
-		status: "Available",
-		copies: 8,
-		available: 6,
-		borrowed: 2,
-		reserved: 0,
-		callNumber: "004.6 CHE",
-		location: "Section C - Floor 1",
-		price: "₹1,950",
-		addedDate: "2024-02-20",
-	},
-	{
-		id: 3,
-		title: "Research Methodology",
-		author: "Dr. Sarah Williams",
-		category: "Academic",
-		image: "/book-3.svg",
-		isbn: "978-0-456789-12-3",
-		publishYear: 2023,
-		status: "Limited",
-		copies: 4,
-		available: 0,
-		borrowed: 3,
-		reserved: 1,
-		callNumber: "001.42 WIL",
-		location: "Section A - Floor 3",
-		price: "₹3,200",
-		addedDate: "2023-12-10",
-	},
-	// Add more books...
-];
+interface Book {
+	id: string;
+	title: string;
+	author: string;
+	category: string;
+	image: string;
+	rating?: number;
+	status?: string;
+	description?: string;
+	publishYear?: number;
+	isbn: string;
+	pages?: number;
+	language?: string;
+	publisher?: string;
+	edition?: string;
+	subjects?: string[];
+	availability?: {
+		total: number;
+		available: number;
+		borrowed: number;
+		reserved: number;
+	};
+	location?: string;
+	callNumber?: string;
+	format?: string;
+	price?: string;
+	totalCopies?: number;
+	availableCopies?: number;
+	borrowedCopies?: number;
+	reservedCopies?: number;
+	copies?: number;
+	available?: number;
+	borrowed?: number;
+	reserved?: number;
+}
 
 export default function AdminBooks() {
-	const [isAuthenticated, setIsAuthenticated] = useState(false);
-	const [books, setBooks] = useState(allBooks);
+	const { token } = useAuth();
+	const [books, setBooks] = useState<Book[]>([]);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("all");
 	const [selectedStatus, setSelectedStatus] = useState("all");
@@ -73,39 +51,49 @@ export default function AdminBooks() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
-	const [selectedBook, setSelectedBook] = useState<any>(null);
+	const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+	const [loading, setLoading] = useState(true);
+	const [form, setForm] = useState<Partial<Book>>({});
 	const router = useRouter();
 
 	const booksPerPage = 10;
-	const categories = [...new Set(books.map((book) => book.category))];
 
-	// Authentication check
+	// Fetch books from API
 	useEffect(() => {
-		const adminAuth = localStorage.getItem("adminAuth");
-		if (!adminAuth || adminAuth !== "true") {
-			router.push("/admin/login");
-			return;
-		}
-		setIsAuthenticated(true);
-	}, [router]);
+		const fetchBooks = async () => {
+			setLoading(true);
+			try {
+				const res = await fetch(
+					`/api/books?sortBy=${sortBy}&search=${searchQuery}&category=${selectedCategory}&status=${selectedStatus}`
+				);
+				const data = await res.json();
+				setBooks(data.books || []);
+			} catch (e) {
+				setBooks([]);
+			} finally {
+				setLoading(false);
+			}
+		};
+		fetchBooks();
+	}, [searchQuery, selectedCategory, selectedStatus, sortBy]);
 
-	// Filter and search books
-	const filteredBooks = books.filter((book) => {
-		const matchesSearch =
-			book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			book.isbn.includes(searchQuery) ||
-			book.callNumber.toLowerCase().includes(searchQuery.toLowerCase());
+	// Categories for filter
+	const categories = [
+		"all",
+		"Fiction",
+		"Non-Fiction", 
+		"Science",
+		"Technology",
+		"History",
+		"Biography",
+		"Education",
+		...Array.from(new Set(books.map(book => book.category))).filter(
+			cat => cat && !["Fiction", "Non-Fiction", "Science", "Technology", "History", "Biography", "Education"].includes(cat)
+		),
+	];
 
-		const matchesCategory =
-			selectedCategory === "all" || book.category === selectedCategory;
-		const matchesStatus =
-			selectedStatus === "all" || book.status === selectedStatus;
-
-		return matchesSearch && matchesCategory && matchesStatus;
-	});
-
-	// Pagination
+	// Filtered and paginated books
+	const filteredBooks = books;
 	const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
 	const startIndex = (currentPage - 1) * booksPerPage;
 	const paginatedBooks = filteredBooks.slice(
@@ -113,18 +101,109 @@ export default function AdminBooks() {
 		startIndex + booksPerPage
 	);
 
-	const handleDeleteBook = (bookId: number) => {
-		if (confirm("Are you sure you want to delete this book?")) {
-			setBooks(books.filter((book) => book.id !== bookId));
+	// CRUD handlers
+	const handleAddBook = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!form.title || !form.author || !form.isbn) {
+			alert("Please fill in all required fields");
+			return;
+		}
+		
+		try {
+			const bookData = {
+				...form,
+				copies: Number(form.copies) || 1,
+				available: Number(form.copies) || 1,
+				borrowed: 0,
+				reserved: 0,
+				image: "/book-1.svg" // Default image
+			};
+
+			const res = await fetch("/api/books", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify(bookData),
+			});
+
+			if (res.ok) {
+				const data = await res.json();
+				setBooks(prev => [data.book, ...prev]);
+				setShowAddModal(false);
+				setForm({});
+				alert("Book added successfully!");
+			} else {
+				alert("Failed to add book");
+			}
+		} catch (error) {
+			alert("Error adding book");
 		}
 	};
 
-	const handleEditBook = (book: any) => {
+	const handleEditBook = (book: Book) => {
 		setSelectedBook(book);
+		setForm({ ...book });
 		setShowEditModal(true);
 	};
 
-	if (!isAuthenticated) {
+	const handleUpdateBook = async (e: React.FormEvent) => {
+		e.preventDefault();
+		if (!form.title || !form.author || !form.isbn) {
+			alert("Please fill in all required fields");
+			return;
+		}
+
+		try {
+			const res = await fetch("/api/books", {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ ...form, copies: Number(form.copies) || 1 }),
+			});
+
+			if (res.ok) {
+				const data = await res.json();
+				setBooks(prev => prev.map(b => b.id === data.book.id ? data.book : b));
+				setShowEditModal(false);
+				setForm({});
+				alert("Book updated successfully!");
+			} else {
+				alert("Failed to update book");
+			}
+		} catch (error) {
+			alert("Error updating book");
+		}
+	};
+
+	const handleDeleteBook = async (id: string) => {
+		if (!confirm("Are you sure you want to delete this book?")) return;
+
+		try {
+			const res = await fetch("/api/books", {
+				method: "DELETE",
+				headers: {
+					"Content-Type": "application/json",
+					Authorization: `Bearer ${token}`,
+				},
+				body: JSON.stringify({ id }),
+			});
+
+			if (res.ok) {
+				setBooks(prev => prev.filter(b => b.id !== id));
+				alert("Book deleted successfully!");
+			} else {
+				alert("Failed to delete book");
+			}
+		} catch (error) {
+			alert("Error deleting book");
+		}
+	};
+
+	if (loading) {
 		return (
 			<div className="min-h-screen bg-gray-100 flex items-center justify-center">
 				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -146,7 +225,10 @@ export default function AdminBooks() {
 						</p>
 					</div>
 					<button
-						onClick={() => setShowAddModal(true)}
+						onClick={() => {
+							setForm({});
+							setShowAddModal(true);
+						}}
 						className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2"
 					>
 						<svg
@@ -221,7 +303,7 @@ export default function AdminBooks() {
 									Available
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									{books.reduce((sum, book) => sum + book.available, 0)}
+									{books.reduce((sum, book) => sum + (book.available ?? 0), 0)}
 								</p>
 							</div>
 						</div>
@@ -251,7 +333,7 @@ export default function AdminBooks() {
 									Borrowed
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									{books.reduce((sum, book) => sum + book.borrowed, 0)}
+									{books.reduce((sum, book) => sum + (book.borrowed ?? 0), 0)}
 								</p>
 							</div>
 						</div>
@@ -281,7 +363,7 @@ export default function AdminBooks() {
 									Reserved
 								</p>
 								<p className="text-2xl font-bold text-gray-900">
-									{books.reduce((sum, book) => sum + book.reserved, 0)}
+									{books.reduce((sum, book) => sum + (book.reserved ?? 0), 0)}
 								</p>
 							</div>
 						</div>
@@ -304,7 +386,7 @@ export default function AdminBooks() {
 								placeholder="Search by title, author, ISBN, or call number..."
 								value={searchQuery}
 								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 placeholder-gray-600 bg-white disabled:text-gray-700 disabled:bg-gray-100"
 							/>
 						</div>
 						<div>
@@ -318,10 +400,10 @@ export default function AdminBooks() {
 								id="category"
 								value={selectedCategory}
 								onChange={(e) => setSelectedCategory(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100"
 							>
 								<option value="all">All Categories</option>
-								{categories.map((category) => (
+								{categories.map((category) => ( 
 									<option key={category} value={category}>
 										{category}
 									</option>
@@ -331,7 +413,7 @@ export default function AdminBooks() {
 						<div>
 							<label
 								htmlFor="status"
-								className="block text-sm font-medium text-gray-700 mb-2"
+								className="block text-base font-semibold text-gray-900 mb-2"
 							>
 								Status
 							</label>
@@ -339,10 +421,10 @@ export default function AdminBooks() {
 								id="status"
 								value={selectedStatus}
 								onChange={(e) => setSelectedStatus(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100"
 							>
 								<option value="all">All Status</option>
-								<option value="Available">Available</option>
+								<option value="Available">Available</option> 
 								<option value="Limited">Limited</option>
 								<option value="Out of Stock">Out of Stock</option>
 							</select>
@@ -353,19 +435,16 @@ export default function AdminBooks() {
 							Showing {paginatedBooks.length} of {filteredBooks.length} books
 						</p>
 						<div className="flex items-center space-x-2">
-							<label
-								htmlFor="sort"
-								className="text-sm text-gray-600"
-							>
+							<label htmlFor="sort" className="text-sm text-gray-600">
 								Sort by:
 							</label>
 							<select
 								id="sort"
 								value={sortBy}
 								onChange={(e) => setSortBy(e.target.value)}
-								className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+								className="px-3 py-1 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 							>
-								<option value="title">Title</option>
+								<option value="title">Title</option> 
 								<option value="author">Author</option>
 								<option value="category">Category</option>
 								<option value="addedDate">Date Added</option>
@@ -442,12 +521,12 @@ export default function AdminBooks() {
 											<div className="flex flex-col">
 												<span
 													className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mb-1 ${
-														book.available > 0
+																(book.available ?? 0) > 0
 															? "bg-green-100 text-green-800"
 															: "bg-red-100 text-red-800"
 													}`}
 												>
-													{book.available > 0
+															{(book.available ?? 0) > 0
 														? "Available"
 														: "Not Available"}
 												</span>
@@ -581,56 +660,74 @@ export default function AdminBooks() {
 									</svg>
 								</button>
 							</div>
-							<form className="space-y-4">
+							<form className="space-y-4" onSubmit={handleAddBook}>
 								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Title
+											Title *
 										</label>
 										<input
 											type="text"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+											name="title"
+											required
+											value={form.title || ""}
+											onChange={(e) =>
+												setForm({ ...form, title: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Author
+											Author *
 										</label>
 										<input
 											type="text"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+											name="author"
+											required
+											value={form.author || ""}
+											onChange={(e) =>
+												setForm({ ...form, author: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">
-											ISBN
+											ISBN *
 										</label>
 										<input
 											type="text"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+											name="isbn"
+											required
+											value={form.isbn || ""}
+											onChange={(e) =>
+												setForm({ ...form, isbn: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">
 											Category
 										</label>
-										<select className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+										<select
+											name="category"
+											value={form.category || ""}
+											onChange={(e) =>
+												setForm({ ...form, category: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+										>
 											<option value="">Select Category</option>
-											{categories.map((category) => (
-												<option key={category} value={category}>
-													{category}
-												</option>
-											))}
+											<option value="Fiction">Fiction</option>
+											<option value="Non-Fiction">Non-Fiction</option>
+											<option value="Science">Science</option>
+											<option value="Technology">Technology</option>
+											<option value="History">History</option>
+											<option value="Biography">Biography</option>
+											<option value="Education">Education</option>
 										</select>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Publish Year
-										</label>
-										<input
-											type="number"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-										/>
 									</div>
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">
@@ -638,16 +735,13 @@ export default function AdminBooks() {
 										</label>
 										<input
 											type="number"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-										/>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Call Number
-										</label>
-										<input
-											type="text"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+											name="copies"
+											min="1"
+											value={form.copies || ""}
+											onChange={(e) =>
+												setForm({ ...form, copies: Number(e.target.value) || undefined })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									<div>
@@ -656,7 +750,13 @@ export default function AdminBooks() {
 										</label>
 										<input
 											type="text"
-											className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+											name="location"
+											placeholder="e.g., Shelf A-1"
+											value={form.location || ""}
+											onChange={(e) =>
+												setForm({ ...form, location: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 								</div>
@@ -673,6 +773,155 @@ export default function AdminBooks() {
 										className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
 									>
 										Add Book
+									</button>
+								</div>
+							</form>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{/* Edit Book Modal */}
+			{showEditModal && selectedBook && (
+				<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+					<div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+						<div className="mt-3">
+							<div className="flex justify-between items-center mb-4">
+								<h3 className="text-lg font-medium text-gray-900">
+									Edit Book Details
+								</h3>
+								<button
+									onClick={() => setShowEditModal(false)}
+									className="text-gray-400 hover:text-gray-600"
+								>
+									<svg
+										className="w-6 h-6"
+										fill="none"
+										stroke="currentColor"
+										strokeWidth="2"
+										viewBox="0 0 24 24"
+									>
+										<path
+											strokeLinecap="round"
+											strokeLinejoin="round"
+											d="M6 18L18 6M6 6l12 12"
+										/>
+									</svg>
+								</button>
+							</div>
+							<form className="space-y-4" onSubmit={handleUpdateBook}>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+									<div>
+										<label className="block text-base font-semibold text-gray-900 mb-2">
+											Title *
+										</label>
+										<input
+											type="text"
+											name="title"
+											required
+											value={form.title || ""}
+											onChange={(e) =>
+												setForm({ ...form, title: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+										/>
+									</div>
+									<div>
+										<label className="block text-base font-semibold text-gray-900 mb-2">
+											Author *
+										</label>
+										<input
+											type="text"
+											name="author"
+											required
+											value={form.author || ""}
+											onChange={(e) =>
+												setForm({ ...form, author: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+										/>
+									</div>
+									<div>
+										<label className="block text-base font-semibold text-gray-900 mb-2">
+											ISBN *
+										</label>
+										<input
+											type="text"
+											name="isbn"
+											required
+											value={form.isbn || ""}
+											onChange={(e) =>
+												setForm({ ...form, isbn: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+										/>
+									</div>
+									<div>
+										<label className="block text-base font-semibold text-gray-900 mb-2">
+											Category
+										</label>
+										<select
+											name="category"
+											value={form.category || ""}
+											onChange={(e) =>
+												setForm({ ...form, category: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+										>
+											<option value="">Select Category</option>
+											<option value="Fiction">Fiction</option>
+											<option value="Non-Fiction">Non-Fiction</option>
+											<option value="Science">Science</option>
+											<option value="Technology">Technology</option>
+											<option value="History">History</option>
+											<option value="Biography">Biography</option>
+											<option value="Education">Education</option>
+										</select>
+									</div>
+									<div>
+										<label className="block text-base font-semibold text-gray-900 mb-2">
+											Total Copies
+										</label>
+										<input
+											type="number"
+											name="copies"
+											min="1"
+											value={form.copies || ""}
+											onChange={(e) =>
+												setForm({ ...form, copies: Number(e.target.value) || undefined })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+										/>
+									</div>
+									<div>
+										<label className="block text-base font-semibold text-gray-900 mb-2">
+											Location
+										</label>
+										<input
+											type="text"
+											name="location"
+											placeholder="e.g., Shelf A-1"
+											value={form.location || ""}
+											onChange={(e) =>
+												setForm({ ...form, location: e.target.value })
+											}
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+										/>
+									</div>
+								</div>
+								<div className="flex justify-end space-x-3 pt-4">
+									<button
+										type="button"
+										onClick={() => setShowEditModal(false)}
+										className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+									>
+										Cancel
+									</button>
+									<button
+										type="submit"
+										className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+									>
+										Update Book
 									</button>
 								</div>
 							</form>
