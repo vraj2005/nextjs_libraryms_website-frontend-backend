@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 export default function AdminReports() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -73,39 +72,6 @@ export default function AdminReports() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Admin Navigation */}
-      <nav className="bg-white shadow-lg border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <Link href="/admin/dashboard" className="text-xl font-bold text-gray-900">LibraryMS Admin</Link>
-              <div className="hidden md:block ml-10">
-                <div className="flex items-baseline space-x-4">
-                  <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Dashboard</Link>
-                  <Link href="/admin/books" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Books</Link>
-                  <Link href="/admin/members" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Members</Link>
-                  <Link href="/admin/transactions" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Transactions</Link>
-                  <Link href="/admin/reports" className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium">Reports</Link>
-                  <Link href="/admin/requests" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Requests</Link>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <button
-                onClick={() => {
-                  localStorage.removeItem("adminAuth");
-                  localStorage.removeItem("adminUser");
-                  router.push("/");
-                }}
-                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="flex justify-between items-center mb-8">
