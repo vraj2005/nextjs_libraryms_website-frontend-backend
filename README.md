@@ -12,7 +12,7 @@ A modern, full-stack Library Management System built with **Next.js 14+**, **Typ
 
 ## 🌟 Features
 
-### 🎯 User Features
+### 🎯 User Feature
 - **Book Catalog**: Browse extensive collection with advanced search and filtering
 - **User Authentication**: Secure JWT-based login and registration system
 - **Profile Management**: Update profile information and change passwords
