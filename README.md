@@ -237,7 +237,7 @@ nextjs_libraryms_website/
 
 ## 🏗️ Project Architecture
 
-### Database Schema (Prisma)
+### Database Schema (Prisma)  
 ```prisma
 model User {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
