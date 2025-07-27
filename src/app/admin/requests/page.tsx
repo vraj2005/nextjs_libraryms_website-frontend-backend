@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 interface BorrowRequest {
   id: string;
@@ -147,18 +148,56 @@ export default function AdminBorrowRequestsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50">
+      {/* Admin Navigation */}
+      <nav className="bg-white shadow-lg border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <h1 className="text-xl font-bold text-gray-900">LibraryMS Admin</h1>
+              </div>
+              <div className="hidden md:block ml-10">
+                <div className="flex items-baseline space-x-4">
+                  <Link href="/admin/dashboard" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Dashboard</Link>
+                  <Link href="/admin/books" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Books</Link>
+                  <Link href="/admin/members" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Members</Link>
+                  <Link href="/admin/transactions" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Transactions</Link>
+                  <Link href="/admin/requests" className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium">Requests</Link>
+                  <Link href="/admin/reports" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Reports</Link>
+                  <Link href="/admin/settings" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Settings</Link>
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-sm text-gray-500">Welcome, {user?.name || user?.email}</span>
+              <button
+                onClick={() => {
+                  localStorage.removeItem("auth_token");
+                  localStorage.removeItem("auth_user");
+                  window.location.href = "/login";
+                }}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900">Borrow Requests Management</h1>
-          <p className="mt-2 text-gray-600">Review and manage book borrow requests from library members.</p>
+          <p className="text-gray-600">Review and manage book borrow requests from library members.</p>
         </div>
 
         {/* Filters */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
             <div>
-              <label htmlFor="status" className="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+              <label htmlFor="status" className="block text-sm font-medium text-gray-900 mb-2">Filter by Status</label>
               <select
                 id="status"
                 value={selectedStatus}
@@ -166,12 +205,12 @@ export default function AdminBorrowRequestsPage() {
                   setSelectedStatus(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 bg-white"
               >
-                <option value="all">All Requests</option>
-                <option value="PENDING">Pending</option>
-                <option value="APPROVED">Approved</option>
-                <option value="REJECTED">Rejected</option>
+                <option value="all" className="text-gray-900 bg-white">All Requests</option>
+                <option value="PENDING" className="text-gray-900 bg-white">Pending</option>
+                <option value="APPROVED" className="text-gray-900 bg-white">Approved</option>
+                <option value="REJECTED" className="text-gray-900 bg-white">Rejected</option>
               </select>
             </div>
             <div className="text-sm text-gray-600">
@@ -228,15 +267,15 @@ export default function AdminBorrowRequestsPage() {
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{request.user.name}</div>
-                          <div className="text-sm text-gray-500">{request.user.email}</div>
-                          <div className="text-xs text-gray-400">ID: {request.user.membershipId}</div>
+                          <div className="text-sm text-gray-900">{request.user.email}</div>
+                          <div className="text-xs text-black">ID: {request.user.membershipId}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
                         <div>
                           <div className="text-sm font-medium text-gray-900">{request.book.title}</div>
-                          <div className="text-sm text-gray-500">by {request.book.author}</div>
-                          <div className="text-xs text-gray-400">ISBN: {request.book.isbn}</div>
+                          <div className="text-sm text-gray-900">by {request.book.author}</div>
+                          <div className="text-xs text-black">ISBN: {request.book.isbn}</div>
                         </div>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -246,9 +285,7 @@ export default function AdminBorrowRequestsPage() {
                         {request.requestedDays} days
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>
-                          {request.status}
-                        </span>
+                        <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>{request.status}</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         {request.status === 'PENDING' ? (
@@ -269,10 +306,10 @@ export default function AdminBorrowRequestsPage() {
                             </button>
                           </div>
                         ) : (
-                          <div className="text-xs text-gray-500">
+                          <div className="text-xs text-gray-900">
                             {request.responseDate && `Processed on ${new Date(request.responseDate).toLocaleDateString()}`}
                             {request.adminResponse && (
-                              <div className="mt-1 text-gray-600 max-w-xs truncate" title={request.adminResponse}>
+                              <div className="mt-1 text-gray-900 max-w-xs truncate" title={request.adminResponse}>
                                 "{request.adminResponse}"
                               </div>
                             )}
@@ -322,12 +359,11 @@ export default function AdminBorrowRequestsPage() {
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {responseModal.action} Borrow Request
             </h3>
-            <p className="text-sm text-gray-600 mb-4">
+            <p className="text-sm text-gray-900 mb-4">
               Are you sure you want to {responseModal.action.toLowerCase()} this borrow request?
             </p>
-            
             <div className="mb-4">
-              <label htmlFor="response" className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="response" className="block text-sm font-medium text-gray-900 mb-2">
                 {responseModal.action === 'APPROVE' ? 'Approval Note (Optional)' : 'Rejection Reason'}
               </label>
               <textarea
@@ -338,14 +374,13 @@ export default function AdminBorrowRequestsPage() {
                 placeholder={responseModal.action === 'APPROVE' 
                   ? 'Add any instructions or notes for the member...'
                   : 'Please provide a reason for rejection...'}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900"
               />
             </div>
-            
             <div className="flex gap-3 justify-end">
               <button
                 onClick={() => setResponseModal(null)}
-                className="px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                className="px-4 py-2 text-gray-900 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
               >
                 Cancel
               </button>
