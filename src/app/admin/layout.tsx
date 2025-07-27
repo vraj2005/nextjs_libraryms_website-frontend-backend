@@ -9,59 +9,43 @@ interface AdminLayoutProps {
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
-  const [isLoading, setIsLoading] = useState(true);
   const [isAuthorized, setIsAuthorized] = useState(false);
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
     const checkAdminAuth = async () => {
       try {
-        // Check if user is authenticated and has admin role
-        if (!user || user.role !== 'ADMIN') {
-          // Also check localStorage for backward compatibility with existing admin sessions
-          const adminAuth = localStorage.getItem("adminAuth");
-          const adminUserData = localStorage.getItem("adminUser");
-          
-          if (!adminAuth || adminAuth !== "true" || !adminUserData) {
-            // Not authenticated as admin, redirect to login
-            router.push("/login");
-            return;
-          }
-          
-          // Validate the admin user data format
-          try {
-            const adminUser = JSON.parse(adminUserData);
-            if (!adminUser.username || !adminUser.role) {
-              throw new Error("Invalid admin user data");
-            }
-            // Valid legacy admin session exists
-            setIsAuthorized(true);
-          } catch (error) {
-            // Invalid admin data, clear and redirect
-            localStorage.removeItem("adminAuth");
-            localStorage.removeItem("adminUser");
-            router.push("/login");
-            return;
-          }
-        } else {
-          // User is properly authenticated with admin role
+        // First check if we have a proper authenticated user with ADMIN role
+        if (user && user.role === 'ADMIN') {
           setIsAuthorized(true);
+          return;
         }
+
+        // If no proper user auth, clear any old admin localStorage data
+        localStorage.removeItem("adminAuth");
+        localStorage.removeItem("adminUser");
+        
+        // Redirect to login
+        router.push("/login");
+        return;
       } catch (error) {
         console.error("Admin auth check error:", error);
+        localStorage.removeItem("adminAuth");
+        localStorage.removeItem("adminUser");
         router.push("/login");
         return;
       }
-      
-      setIsLoading(false);
     };
 
-    checkAdminAuth();
-  }, [user, router]);
+    // Only check auth after the AuthContext has finished loading
+    if (!loading) {
+      checkAdminAuth();
+    }
+  }, [user, router, loading]);
 
   // Show loading spinner while checking authentication
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
