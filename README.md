@@ -22,7 +22,7 @@ A modern, full-stack Library Management System built with **Next.js 14+**, **Typ
 - **Notification Management**: Get notification related to borrow books
 
 ### 🛠️ Administrative Features
-- **Secure Admin Panel**: Protected admin routes with JWT authentication
+- **Secure Admin Panel**: Protected admin routes with JWT authentication 
 - **Complete CRUD Operations**: Full Create, Read, Update, Delete functionality for books
 - **Real-time Book Management**: Add, edit, delete books with live database updates
 - **Member Management**: Manage user accounts and memberships
