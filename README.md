@@ -36,7 +36,7 @@ A modern, full-stack Library Management System built with **Next.js 14+**, **Typ
 - **Advanced Search**: Real-time search with multiple filter options
 - **Efficient Pagination**: Smart content loading and navigation
 
-## 🛠️ Technology Stack
+## 🛠️ Technology 
 
 ### Frontend
 - **Framework**: Next.js 15.3.3 with App Router
