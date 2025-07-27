@@ -19,7 +19,7 @@ A modern, full-stack Library Management System built with **Next.js 14+**, **Typ
 - **Book Management**: Borrow, return, and renew books with automated tracking
 - **Favorites System**: Save and manage favorite books
 - **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Notification Management**: Get notification about borrow requesting and accepting books
+- **Notification Management**: Get notification about borrow 
 
 ### 🛠️ Administrative Features
 - **Secure Admin Panel**: Protected admin routes with JWT authentication
