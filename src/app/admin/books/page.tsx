@@ -142,6 +142,7 @@ export default function AdminBooks() {
                   <Link href="/admin/books" className="text-blue-600 hover:text-blue-800 px-3 py-2 rounded-md text-sm font-medium">Books</Link>
                   <Link href="/admin/members" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Members</Link>
                   <Link href="/admin/transactions" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Transactions</Link>
+                  <Link href="/admin/requests" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Requests</Link>
                   <Link href="/admin/reports" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Reports</Link>
                 </div>
               </div>
@@ -151,7 +152,7 @@ export default function AdminBooks() {
                 onClick={() => {
                   localStorage.removeItem("adminAuth");
                   localStorage.removeItem("adminUser");
-                  router.push("/admin/login");
+                  router.push("/");
                 }}
                 className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
               >

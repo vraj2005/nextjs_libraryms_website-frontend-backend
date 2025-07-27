@@ -30,7 +30,7 @@ export default function AdminDashboard() {
     const adminUserData = localStorage.getItem("adminUser");
     
     if (!adminAuth || adminAuth !== "true" || !adminUserData) {
-      router.push("/admin/login");
+      router.push("/login");
       return;
     }
 
@@ -40,7 +40,7 @@ export default function AdminDashboard() {
   const handleLogout = () => {
     localStorage.removeItem("adminAuth");
     localStorage.removeItem("adminUser");
-    router.push("/admin/login");
+    router.push("/");
   };
 
   if (!adminUser) {
@@ -106,6 +106,7 @@ export default function AdminDashboard() {
                   <Link href="/admin/books" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Books</Link>
                   <Link href="/admin/members" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Members</Link>
                   <Link href="/admin/transactions" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Transactions</Link>
+                  <Link href="/admin/requests" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Requests</Link>
                   <Link href="/admin/reports" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Reports</Link>
                   <Link href="/admin/settings" className="text-gray-500 hover:text-gray-700 px-3 py-2 rounded-md text-sm font-medium">Settings</Link>
                 </div>

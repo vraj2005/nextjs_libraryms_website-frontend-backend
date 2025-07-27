@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -9,6 +10,7 @@ export default function Navigation() {
   const [isCategoriesDropdownOpen, setIsCategoriesDropdownOpen] = useState(false);
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
+  const { user, logout } = useAuth();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -33,6 +35,21 @@ export default function Navigation() {
 
   const closeCategoriesDropdown = () => {
     setIsCategoriesDropdownOpen(false);
+  };
+
+  const handleLogout = () => {
+    logout();
+    closeAccountDropdown();
+  };
+
+  // Get user's initials for avatar
+  const getUserInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(word => word.charAt(0))
+      .join('')
+      .toUpperCase()
+      .slice(0, 2);
   };
 
   return (
@@ -176,8 +193,21 @@ export default function Navigation() {
               aria-expanded={isAccountDropdownOpen}
               onClick={() => setIsAccountDropdownOpen(!isAccountDropdownOpen)}
             >
-              <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-sky-200 via-sky-100 to-amber-100 flex items-center justify-center text-sky-700 font-bold border border-sky-200 shadow-inner text-xs md:text-sm transition-all duration-200">U</span>
-              <span className="hidden md:inline transition-all duration-200">Account</span>
+              {user ? (
+                <>
+                  <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-sky-200 via-sky-100 to-amber-100 flex items-center justify-center text-sky-700 font-bold border border-sky-200 shadow-inner text-xs md:text-sm transition-all duration-200">
+                    {getUserInitials(user.name)}
+                  </span>
+                  <span className="hidden md:inline transition-all duration-200 max-w-24 truncate">
+                    {user.name.split(' ')[0]}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-sky-200 via-sky-100 to-amber-100 flex items-center justify-center text-sky-700 font-bold border border-sky-200 shadow-inner text-xs md:text-sm transition-all duration-200">U</span>
+                  <span className="hidden md:inline transition-all duration-200">Account</span>
+                </>
+              )}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"
@@ -198,46 +228,75 @@ export default function Navigation() {
                 ? 'opacity-100 visible pointer-events-auto scale-100 translate-y-0' 
                 : 'opacity-0 invisible pointer-events-none scale-90 translate-y-4'
             }`}>
-              <Link
-                href="/profile"
-                className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-purple-400"
-                onClick={closeAccountDropdown}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-purple-600">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" />
-                </svg>
-                <span className="group-hover/item:text-purple-600 transition-colors duration-200">Profile</span>
-              </Link>
-              <Link
-                href="/borrowed"
-                className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-amber-400"
-                onClick={closeAccountDropdown}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-amber-600">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
-                </svg>
-                <span className="group-hover/item:text-amber-600 transition-colors duration-200">My Books</span>
-              </Link>
-              <Link
-                href="/login"
-                className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-sky-400"
-                onClick={closeAccountDropdown}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-sky-600">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25V9m7.5 0v10.5A2.25 2.25 0 0113.5 21h-3a2.25 2.25 0 01-2.25-2.25V9m7.5 0h-10.5" />
-                </svg>
-                <span className="group-hover/item:text-sky-900 transition-colors duration-200">Login</span>
-              </Link>
-              <Link
-                href="/register"
-                className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-green-400"
-                onClick={closeAccountDropdown}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-green-600">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75A2.25 2.25 0 0014.25 4.5h-4.5A2.25 2.25 0 007.5 6.75v3.75m9 0v6.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25v-6.75m9 0h-10.5" />
-                </svg>
-                <span className="group-hover/item:text-green-600 transition-colors duration-200">Register</span>
-              </Link>
+              {user ? (
+                <>
+                  {/* User Info Section */}
+                  <div className="px-4 md:px-6 py-3 border-b border-sky-100 bg-gradient-to-r from-sky-50 to-indigo-50">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-200 via-sky-100 to-amber-100 flex items-center justify-center text-sky-700 font-bold border border-sky-200 shadow-inner">
+                        {getUserInitials(user.name)}
+                      </div>
+                      <div>
+                        <p className="font-semibold text-gray-800 text-sm truncate max-w-32">{user.name}</p>
+                        <p className="text-xs text-gray-600 truncate max-w-32">{user.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <Link
+                    href="/profile"
+                    className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-purple-400"
+                    onClick={closeAccountDropdown}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-purple-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.25a8.25 8.25 0 1115 0v.75a.75.75 0 01-.75.75h-13.5a.75.75 0 01-.75-.75v-.75z" />
+                    </svg>
+                    <span className="group-hover/item:text-purple-600 transition-colors duration-200">Profile</span>
+                  </Link>
+                  <Link
+                    href="/borrowed"
+                    className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-amber-400"
+                    onClick={closeAccountDropdown}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-amber-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                    </svg>
+                    <span className="group-hover/item:text-amber-600 transition-colors duration-200">My Books</span>
+                  </Link>
+                  <button
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-red-50 text-sky-700 hover:text-red-600 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-red-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-red-400 w-full text-left"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-red-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
+                    </svg>
+                    <span className="group-hover/item:text-red-600 transition-colors duration-200">Logout</span>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login"
+                    className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-sky-400"
+                    onClick={closeAccountDropdown}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-sky-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-3A2.25 2.25 0 008.25 5.25V9m7.5 0v10.5A2.25 2.25 0 0113.5 21h-3a2.25 2.25 0 01-2.25-2.25V9m7.5 0h-10.5" />
+                    </svg>
+                    <span className="group-hover/item:text-sky-900 transition-colors duration-200">Login</span>
+                  </Link>
+                  <Link
+                    href="/register"
+                    className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-green-400"
+                    onClick={closeAccountDropdown}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-green-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75A2.25 2.25 0 0014.25 4.5h-4.5A2.25 2.25 0 007.5 6.75v3.75m9 0v6.75A2.25 2.25 0 0114.25 19.5h-4.5A2.25 2.25 0 017.5 17.25v-6.75m9 0h-10.5" />
+                    </svg>
+                    <span className="group-hover/item:text-green-600 transition-colors duration-200">Register</span>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
           {/* Mobile menu button */}

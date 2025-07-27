@@ -1,423 +1,231 @@
-"use client";
+'use client'
 
-import React, { useState, useEffect } from "react";
-import Image from "next/image";
-import Link from "next/link";
+import React, { useState, useEffect } from 'react'
+import { useAuth } from '@/contexts/AuthContext'
+import Image from 'next/image'
 
-// Extended books database with full details
-const allBooks = [
-  {
-    id: 1,
-    title: "The Great Library",
-    author: "Dr. Elena Richardson",
-    category: "Academic",
-    image: "/book-1.svg",
-    rating: 4.8,
-    status: "Available",
-    description: "A comprehensive guide to modern library science and information management systems. This book explores the evolution of libraries from traditional repositories to digital hubs of knowledge, covering everything from cataloging systems to user experience design.",
-    publishYear: 2023,
-    isbn: "978-0-123456-78-9",
-    pages: 320,
-    language: "English",
-    publisher: "Academic Press",
-    edition: "3rd Edition",
-    subjects: ["Library Science", "Information Management", "Digital Libraries"],
-    availability: {
-      total: 5,
-      available: 3,
-      borrowed: 2
-    },
-    location: "Section A - Floor 2",
-    callNumber: "020.1 RIC",
-    format: "Hardcover",
-    price: "₹2,850"
-  },
-  {
-    id: 2,
-    title: "Digital Transformation",
-    author: "Prof. Michael Chen",
-    category: "Technology",
-    image: "/book-2.svg",
-    rating: 4.9,
-    status: "Available",
-    description: "Understanding the impact of digital technology on modern society, business, and personal life. This comprehensive text examines how digital transformation is reshaping industries, creating new opportunities, and challenging traditional business models.",
-    publishYear: 2024,
-    isbn: "978-0-987654-32-1",
-    pages: 256,
-    language: "English",
-    publisher: "Tech Publications",
-    edition: "2nd Edition",
-    subjects: ["Digital Technology", "Business Transformation", "Innovation"],
-    availability: {
-      total: 8,
-      available: 6,
-      borrowed: 2
-    },
-    location: "Section C - Floor 1",
-    callNumber: "004.6 CHE",
-    format: "Paperback",
-    price: "₹1,950"
-  },
-  {
-    id: 3,
-    title: "Research Methodology",
-    author: "Dr. Sarah Williams",
-    category: "Academic",
-    image: "/book-3.svg",
-    rating: 4.7,
-    status: "Reserved",
-    description: "Essential guide for academic research and scholarly writing. This book provides a comprehensive overview of research methods, from qualitative and quantitative approaches to data analysis and presentation techniques.",
-    publishYear: 2023,
-    isbn: "978-0-456789-12-3",
-    pages: 384,
-    language: "English",
-    publisher: "Research Press",
-    edition: "5th Edition",
-    subjects: ["Research Methods", "Academic Writing", "Data Analysis"],
-    availability: {
-      total: 4,
-      available: 0,
-      borrowed: 3,
-      reserved: 1
-    },
-    location: "Section A - Floor 3",
-    callNumber: "001.42 WIL",
-    format: "Hardcover",
-    price: "₹3,200"
-  },
-  {
-    id: 4,
-    title: "Modern Literature",
-    author: "James Patterson",
-    category: "Fiction",
-    image: "/book-4.svg",
-    rating: 4.6,
-    status: "Available",
-    description: "A collection of contemporary literary works and analysis. This anthology brings together the most influential pieces of modern literature, accompanied by critical analysis and historical context.",
-    publishYear: 2024,
-    isbn: "978-0-234567-89-1",
-    pages: 292,
-    language: "English",
-    publisher: "Literary House",
-    edition: "1st Edition",
-    subjects: ["Modern Literature", "Literary Analysis", "Contemporary Fiction"],
-    availability: {
-      total: 6,
-      available: 4,
-      borrowed: 2
-    },
-    location: "Section B - Floor 2",
-    callNumber: "813.54 PAT",
-    format: "Paperback",
-    price: "₹1,450"
-  },
-  {
-    id: 5,
-    title: "Data Science Fundamentals",
-    author: "Dr. Lisa Zhang",
-    category: "Technology",
-    image: "/book-5.svg",
-    rating: 4.9,
-    status: "Available",
-    description: "Complete guide to data science, analytics, and machine learning. From basic statistical concepts to advanced machine learning algorithms, this book provides hands-on examples and practical applications in real-world scenarios.",
-    publishYear: 2024,
-    isbn: "978-0-345678-91-2",
-    pages: 448,
-    language: "English",
-    publisher: "Data Science Press",
-    edition: "4th Edition",
-    subjects: ["Data Science", "Machine Learning", "Statistics", "Analytics"],
-    availability: {
-      total: 10,
-      available: 7,
-      borrowed: 3
-    },
-    location: "Section C - Floor 2",
-    callNumber: "006.31 ZHA",
-    format: "Hardcover",
-    price: "₹3,750"
-  },
-  {
-    id: 6,
-    title: "Environmental Studies",
-    author: "Prof. David Green",
-    category: "Science",
-    image: "/book-6.svg",
-    rating: 4.5,
-    status: "Checked Out",
-    description: "Comprehensive study of environmental science and sustainability. This textbook covers climate change, biodiversity, pollution control, and sustainable development practices with case studies from around the world.",
-    publishYear: 2023,
-    isbn: "978-0-567891-23-4",
-    pages: 376,
-    language: "English",
-    publisher: "Environment Press",
-    edition: "6th Edition",
-    subjects: ["Environmental Science", "Sustainability", "Climate Change", "Ecology"],
-    availability: {
-      total: 5,
-      available: 0,
-      borrowed: 5
-    },
-    location: "Section D - Floor 1",
-    callNumber: "577 GRE",
-    format: "Hardcover",
-    price: "₹2,650"
-  },
-  {
-    id: 7,
-    title: "Philosophy of Mind",
-    author: "Dr. Rebecca Moore",
-    category: "Philosophy",
-    image: "/book-1.svg",
-    rating: 4.4,
-    status: "Available",
-    description: "Exploring consciousness, thought, and the nature of mind. This philosophical treatise delves into fundamental questions about consciousness, artificial intelligence, and the relationship between mind and body.",
-    publishYear: 2023,
-    isbn: "978-0-678912-34-5",
-    pages: 302,
-    language: "English",
-    publisher: "Philosophy Today",
-    edition: "2nd Edition",
-    subjects: ["Philosophy", "Consciousness", "Cognitive Science", "Ethics"],
-    availability: {
-      total: 3,
-      available: 2,
-      borrowed: 1
-    },
-    location: "Section E - Floor 3",
-    callNumber: "128 MOO",
-    format: "Paperback",
-    price: "₹1,850"
-  },
-  {
-    id: 8,
-    title: "Quantum Physics Explained",
-    author: "Prof. Alan Cooper",
-    category: "Science",
-    image: "/book-2.svg",
-    rating: 4.8,
-    status: "Available",
-    description: "Making quantum mechanics accessible to everyone. This book breaks down complex quantum physics concepts into understandable explanations, complete with illustrations and practical applications in modern technology.",
-    publishYear: 2024,
-    isbn: "978-0-789123-45-6",
-    pages: 334,
-    language: "English",
-    publisher: "Science World",
-    edition: "3rd Edition",
-    subjects: ["Quantum Physics", "Theoretical Physics", "Modern Physics"],
-    availability: {
-      total: 4,
-      available: 3,
-      borrowed: 1
-    },
-    location: "Section D - Floor 2",
-    callNumber: "530.12 COO",
-    format: "Hardcover",
-    price: "₹3,100"
-  },
-  {
-    id: 9,
-    title: "Creative Writing Workshop",
-    author: "Emma Thompson",
-    category: "Fiction",
-    image: "/book-3.svg",
-    rating: 4.5,
-    status: "Reserved",
-    description: "A practical guide to developing your writing skills. This hands-on workshop guide includes exercises, prompts, and techniques for crafting compelling narratives, developing characters, and finding your unique voice.",
-    publishYear: 2023,
-    isbn: "978-0-891234-56-7",
-    pages: 268,
-    language: "English",
-    publisher: "Writers Guild",
-    edition: "1st Edition",
-    subjects: ["Creative Writing", "Narrative Techniques", "Character Development"],
-    availability: {
-      total: 6,
-      available: 1,
-      borrowed: 4,
-      reserved: 1
-    },
-    location: "Section B - Floor 1",
-    callNumber: "808.3 THO",
-    format: "Paperback",
-    price: "₹1,350"
-  },
-  {
-    id: 10,
-    title: "Machine Learning Mastery",
-    author: "Dr. Kevin Johnson",
-    category: "Technology",
-    image: "/book-4.svg",
-    rating: 4.9,
-    status: "Available",
-    description: "Advanced techniques in artificial intelligence and machine learning. This comprehensive guide covers neural networks, deep learning, natural language processing, and computer vision with practical Python implementations.",
-    publishYear: 2024,
-    isbn: "978-0-912345-67-8",
-    pages: 512,
-    language: "English",
-    publisher: "AI Publications",
-    edition: "2nd Edition",
-    subjects: ["Machine Learning", "Artificial Intelligence", "Neural Networks", "Deep Learning"],
-    availability: {
-      total: 8,
-      available: 5,
-      borrowed: 3
-    },
-    location: "Section C - Floor 3",
-    callNumber: "006.31 JOH",
-    format: "Hardcover",
-    price: "₹4,200"
-  },
-  {
-    id: 11,
-    title: "History of Ancient Civilizations",
-    author: "Dr. Maria Rodriguez",
-    category: "History",
-    image: "/book-5.svg",
-    rating: 4.6,
-    status: "Available",
-    description: "A comprehensive journey through ancient civilizations from Mesopotamia to the Roman Empire. This book explores the rise and fall of great civilizations, their contributions to human knowledge, and their lasting impact on modern society.",
-    publishYear: 2023,
-    isbn: "978-0-567123-89-0",
-    pages: 456,
-    language: "English",
-    publisher: "Historical Society Press",
-    edition: "4th Edition",
-    subjects: ["Ancient History", "Civilizations", "Archaeology", "Cultural Studies"],
-    availability: {
-      total: 7,
-      available: 5,
-      borrowed: 2
-    },
-    location: "Section F - Floor 2",
-    callNumber: "930 ROD",
-    format: "Hardcover",
-    price: "₹2,950"
-  },
-  {
-    id: 12,
-    title: "Modern Psychology",
-    author: "Dr. Robert Kim",
-    category: "Psychology",
-    image: "/book-6.svg",
-    rating: 4.7,
-    status: "Available",
-    description: "Understanding human behavior and mental processes in the 21st century. This textbook covers cognitive psychology, social psychology, developmental psychology, and clinical applications with current research findings.",
-    publishYear: 2024,
-    isbn: "978-0-234789-01-2",
-    pages: 398,
-    language: "English",
-    publisher: "Psychology Press",
-    edition: "8th Edition",
-    subjects: ["Psychology", "Cognitive Science", "Behavioral Studies", "Mental Health"],
-    availability: {
-      total: 9,
-      available: 6,
-      borrowed: 3
-    },
-    location: "Section G - Floor 1",
-    callNumber: "150 KIM",
-    format: "Paperback",
-    price: "₹2,450"
+interface Book {
+  id: string
+  title: string
+  author: string
+  category: string
+  image: string
+  rating: number
+  status: string
+  description: string
+  publishYear: number
+  isbn: string
+  pages: number
+  language: string
+  publisher: string
+  edition: string
+  subjects: string[]
+  availability: {
+    total: number
+    available: number
+    borrowed: number
+    reserved?: number
   }
-];
+  location: string
+  callNumber: string
+  format: string
+  price: number
+}
+
+interface PaginationInfo {
+  currentPage: number
+  totalPages: number
+  totalBooks: number
+  hasNextPage: boolean
+  hasPrevPage: boolean
+}
 
 export default function BooksPage() {
-  const [books, setBooks] = useState(allBooks);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("all");
-  const [selectedStatus, setSelectedStatus] = useState("all");
-  const [sortBy, setSortBy] = useState("title");
-  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [selectedBook, setSelectedBook] = useState<typeof allBooks[0] | null>(null);
-  const [showBookModal, setShowBookModal] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const booksPerPage = 8;
+  const { user } = useAuth()
+  const [books, setBooks] = useState<Book[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
+  const [pagination, setPagination] = useState<PaginationInfo>({
+    currentPage: 1,
+    totalPages: 1,
+    totalBooks: 0,
+    hasNextPage: false,
+    hasPrevPage: false
+  })
+  
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('all')
+  const [selectedStatus, setSelectedStatus] = useState('all')
+  const [sortBy, setSortBy] = useState('title')
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc')
+  const [favorites, setFavorites] = useState<string[]>([])
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
+  const [showBookModal, setShowBookModal] = useState(false)
+  const [showBorrowModal, setShowBorrowModal] = useState(false)
+  const [borrowReason, setBorrowReason] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const booksPerPage = 8
 
-  // Get unique categories
-  const categories = [...new Set(books.map(book => book.category))];
+  // Get unique categories from books
+  const categories = Array.from(new Set(books.map(book => book.category)))
 
   // Load favorites from localStorage
   useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites');
+    const savedFavorites = localStorage.getItem('favorites')
     if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
+      setFavorites(JSON.parse(savedFavorites))
     }
-  }, []);
+  }, [])
 
-  const toggleFavorite = (bookId: number) => {
+  const fetchBooks = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams({
+        page: currentPage.toString(),
+        limit: booksPerPage.toString(),
+        sortBy,
+        sortOrder
+      })
+
+      if (searchQuery) params.append('search', searchQuery)
+      if (selectedCategory !== 'all') params.append('category', selectedCategory)
+      if (selectedStatus !== 'all') params.append('status', selectedStatus)
+
+      const response = await fetch(`/api/books?${params}`)
+      const data = await response.json()
+
+      if (response.ok) {
+        setBooks(data.books)
+        setPagination(data.pagination)
+      } else {
+        setError(data.error || 'Failed to fetch books')
+      }
+    } catch (error) {
+      setError('Failed to fetch books')
+      console.error('Error fetching books:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchBooks()
+  }, [currentPage, searchQuery, selectedCategory, selectedStatus, sortBy, sortOrder])
+
+  const toggleFavorite = (bookId: string) => {
     const updatedFavorites = favorites.includes(bookId)
       ? favorites.filter(id => id !== bookId)
-      : [...favorites, bookId];
+      : [...favorites, bookId]
     
-    setFavorites(updatedFavorites);
-    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-  };
+    setFavorites(updatedFavorites)
+    localStorage.setItem('favorites', JSON.stringify(updatedFavorites))
+  }
 
-  // Filter and sort books
-  const filteredBooks = books
-    .filter(book => {
-      const matchesSearch = 
-        book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        book.subjects.some(subject => subject.toLowerCase().includes(searchQuery.toLowerCase()));
-      
-      const matchesCategory = selectedCategory === "all" || book.category === selectedCategory;
-      const matchesStatus = selectedStatus === "all" || book.status === selectedStatus;
-      
-      return matchesSearch && matchesCategory && matchesStatus;
-    })
-    .sort((a, b) => {
-      let aValue: any, bValue: any;
-      
-      switch (sortBy) {
-        case "title":
-          aValue = a.title;
-          bValue = b.title;
-          break;
-        case "author":
-          aValue = a.author;
-          bValue = b.author;
-          break;
-        case "year":
-          aValue = a.publishYear;
-          bValue = b.publishYear;
-          break;
-        case "rating":
-          aValue = a.rating;
-          bValue = b.rating;
-          break;
-        case "pages":
-          aValue = a.pages;
-          bValue = b.pages;
-          break;
-        default:
-          return 0;
-      }
-      
-      if (typeof aValue === "string") {
-        return sortOrder === "asc" ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+  const handleBorrowRequest = async () => {
+    if (!selectedBook || !user) return
+
+    try {
+      setSubmitting(true)
+      const response = await fetch('/api/borrow-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          bookId: selectedBook.id,
+          reason: borrowReason
+        })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert('Borrow request submitted successfully! You will be notified when the admin reviews your request.')
+        setShowBorrowModal(false)
+        setBorrowReason('')
+        setSelectedBook(null)
+        setShowBookModal(false)
+        // Refresh books to update availability
+        fetchBooks()
       } else {
-        return sortOrder === "asc" ? aValue - bValue : bValue - aValue;
+        alert(data.error || 'Failed to submit borrow request')
       }
-    });
+    } catch (error) {
+      console.error('Error submitting borrow request:', error)
+      alert('Failed to submit borrow request')
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
-  // Pagination
-  const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
-  const startIndex = (currentPage - 1) * booksPerPage;
-  const paginatedBooks = filteredBooks.slice(startIndex, startIndex + booksPerPage);
+  const handleAddToFavorites = async (bookId: string) => {
+    if (!user) {
+      alert('Please login to add books to favorites')
+      return
+    }
 
-  const openBookModal = (book: typeof allBooks[0]) => {
-    setSelectedBook(book);
-    setShowBookModal(true);
-  };
+    try {
+      const response = await fetch('/api/favorites', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ bookId })
+      })
+
+      const data = await response.json()
+
+      if (response.ok) {
+        alert('Book added to favorites!')
+        toggleFavorite(bookId)
+      } else {
+        alert(data.error || 'Failed to add to favorites')
+      }
+    } catch (error) {
+      console.error('Error adding to favorites:', error)
+      alert('Failed to add to favorites')
+    }
+  }
+
+  const openBookModal = (book: Book) => {
+    setSelectedBook(book)
+    setShowBookModal(true)
+  }
 
   const closeBookModal = () => {
-    setShowBookModal(false);
-    setSelectedBook(null);
-  };
+    setShowBookModal(false)
+    setSelectedBook(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-lg text-gray-600">Loading books...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-600 text-lg">{error}</p>
+          <button 
+            onClick={fetchBooks}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
@@ -442,7 +250,7 @@ export default function BooksPage() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
               </svg>
-              <span className="font-semibold">{allBooks.length} Total Books</span>
+              <span className="font-semibold">{pagination.totalBooks} Total Books</span>
             </div>
             <div className="flex items-center gap-2 bg-white/20 backdrop-blur-sm rounded-full px-6 py-3 text-blue-100">
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -523,7 +331,7 @@ export default function BooksPage() {
                   >
                     <option value="title">Title</option>
                     <option value="author">Author</option>
-                    <option value="year">Year</option>
+                    <option value="publishYear">Year</option>
                     <option value="rating">Rating</option>
                     <option value="pages">Pages</option>
                   </select>
@@ -541,7 +349,7 @@ export default function BooksPage() {
                 </button>
               </div>
               <div className="text-sm text-gray-600">
-                Showing {paginatedBooks.length} of {filteredBooks.length} books
+                Showing {books.length} of {pagination.totalBooks} books
               </div>
             </div>
           </div>
@@ -551,7 +359,7 @@ export default function BooksPage() {
       {/* Books Grid */}
       <section className="py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 md:px-8">
-          {filteredBooks.length === 0 ? (
+          {books.length === 0 ? (
             <div className="text-center py-16">
               <div className="w-24 h-24 mx-auto mb-6 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center">
                 <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -578,7 +386,7 @@ export default function BooksPage() {
           ) : (
             <>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-8">
-                {paginatedBooks.map((book) => (
+                {books.map((book) => (
                   <div
                     key={book.id}
                     className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100 group cursor-pointer"
@@ -591,6 +399,10 @@ export default function BooksPage() {
                         fill
                         className="object-contain bg-gradient-to-br from-blue-50 to-indigo-50"
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement
+                          target.src = '/book-placeholder.jpg'
+                        }}
                       />
                       <div className="absolute top-4 right-4">
                         <span
@@ -640,26 +452,55 @@ export default function BooksPage() {
                           <span className="font-semibold text-blue-600">{book.price}</span>
                         </div>
                         
-                        <div className="flex justify-center pt-3 border-t border-gray-100">
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite(book.id);
-                            }}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200 ${
-                              favorites.includes(book.id)
-                                ? "bg-red-500 text-white hover:bg-red-600"
-                                : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
-                            }`}
-                            aria-label={favorites.includes(book.id) ? "Remove from favorites" : "Add to favorites"}
-                          >
-                            <svg className="w-4 h-4" fill={favorites.includes(book.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                            </svg>
-                            <span className="text-sm font-medium">
-                              {favorites.includes(book.id) ? "Favorited" : "Add to Favorites"}
-                            </span>
-                          </button>
+                        <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                          {user ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedBook(book);
+                                  setShowBorrowModal(true);
+                                }}
+                                disabled={book.status !== 'Available'}
+                                className={`w-full px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                                  book.status === 'Available'
+                                    ? "bg-blue-600 text-white hover:bg-blue-700"
+                                    : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                                }`}
+                              >
+                                {book.status === 'Available' ? 'Request to Borrow' : 'Not Available'}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavorite(book.id);
+                                }}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-200 ${
+                                  favorites.includes(book.id)
+                                    ? "bg-red-500 text-white hover:bg-red-600"
+                                    : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
+                                }`}
+                                aria-label={favorites.includes(book.id) ? "Remove from favorites" : "Add to favorites"}
+                              >
+                                <svg className="w-4 h-4" fill={favorites.includes(book.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                                <span className="text-sm font-medium">
+                                  {favorites.includes(book.id) ? "Favorited" : "Add to Favorites"}
+                                </span>
+                              </button>
+                            </>
+                          ) : (
+                            <div className="text-center">
+                              <p className="text-sm text-gray-500 mb-2">Login to borrow books</p>
+                              <a
+                                href="/login"
+                                className="inline-block px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-colors"
+                              >
+                                Login
+                              </a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -668,7 +509,7 @@ export default function BooksPage() {
               </div>
 
               {/* Pagination */}
-              {totalPages > 1 && (
+              {pagination.totalPages > 1 && (
                 <div className="mt-12 flex justify-center items-center gap-2">
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
@@ -678,7 +519,7 @@ export default function BooksPage() {
                     Previous
                   </button>
                   
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  {Array.from({ length: pagination.totalPages }, (_, i) => i + 1).map(page => (
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
@@ -693,8 +534,8 @@ export default function BooksPage() {
                   ))}
                   
                   <button
-                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, pagination.totalPages))}
+                    disabled={currentPage === pagination.totalPages}
                     className="px-4 py-2 rounded-lg bg-white border border-blue-200 text-gray-700 hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     Next
@@ -740,25 +581,25 @@ export default function BooksPage() {
                     </div>
                     
                     {/* Availability Status */}
-                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl">
-                      <h4 className="font-semibold text-gray-900 mb-3">Availability</h4>
-                      <div className="space-y-2 text-sm">
+                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                      <h4 className="font-bold text-gray-900 mb-3 text-base">Availability Status</h4>
+                      <div className="space-y-3 text-sm">
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Total Copies:</span>
-                          <span className="font-medium">{selectedBook.availability.total}</span>
+                          <span className="text-gray-700 font-medium">Total Copies:</span>
+                          <span className="font-bold text-gray-900">{selectedBook.availability.total}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Available:</span>
-                          <span className="font-medium text-green-600">{selectedBook.availability.available}</span>
+                          <span className="text-gray-700 font-medium">Available:</span>
+                          <span className="font-bold text-green-600">{selectedBook.availability.available}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-600">Borrowed:</span>
-                          <span className="font-medium text-blue-600">{selectedBook.availability.borrowed}</span>
+                          <span className="text-gray-700 font-medium">Borrowed:</span>
+                          <span className="font-bold text-blue-600">{selectedBook.availability.borrowed}</span>
                         </div>
                         {selectedBook.availability.reserved && (
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Reserved:</span>
-                            <span className="font-medium text-yellow-600">{selectedBook.availability.reserved}</span>
+                            <span className="text-gray-700 font-medium">Reserved:</span>
+                            <span className="font-bold text-yellow-600">{selectedBook.availability.reserved}</span>
                           </div>
                         )}
                       </div>
@@ -796,71 +637,71 @@ export default function BooksPage() {
                       {/* Description */}
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
-                        <p className="text-gray-700 leading-relaxed">{selectedBook.description}</p>
+                        <p className="text-gray-800 leading-relaxed text-base">{selectedBook.description}</p>
                       </div>
 
                       {/* Book Details */}
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-3">Publication Details</h3>
-                          <div className="space-y-2 text-sm">
+                          <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Publisher:</span>
-                              <span className="font-medium">{selectedBook.publisher}</span>
+                              <span className="text-gray-700 font-medium">Publisher:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.publisher}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Year:</span>
-                              <span className="font-medium">{selectedBook.publishYear}</span>
+                              <span className="text-gray-700 font-medium">Year:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.publishYear}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Edition:</span>
-                              <span className="font-medium">{selectedBook.edition}</span>
+                              <span className="text-gray-700 font-medium">Edition:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.edition}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">ISBN:</span>
-                              <span className="font-medium">{selectedBook.isbn}</span>
+                              <span className="text-gray-700 font-medium">ISBN:</span>
+                              <span className="font-semibold text-gray-900 font-mono text-xs">{selectedBook.isbn}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Pages:</span>
-                              <span className="font-medium">{selectedBook.pages}</span>
+                              <span className="text-gray-700 font-medium">Pages:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.pages}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Language:</span>
-                              <span className="font-medium">{selectedBook.language}</span>
+                              <span className="text-gray-700 font-medium">Language:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.language}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Format:</span>
-                              <span className="font-medium">{selectedBook.format}</span>
+                              <span className="text-gray-700 font-medium">Format:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.format}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Price:</span>
-                              <span className="font-medium text-blue-600">{selectedBook.price}</span>
+                              <span className="text-gray-700 font-medium">Price:</span>
+                              <span className="font-bold text-blue-600 text-base">{selectedBook.price}</span>
                             </div>
                           </div>
                         </div>
 
                         <div>
                           <h3 className="text-lg font-semibold text-gray-900 mb-3">Library Information</h3>
-                          <div className="space-y-2 text-sm">
+                          <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Category:</span>
-                              <span className="font-medium">{selectedBook.category}</span>
+                              <span className="text-gray-700 font-medium">Category:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.category}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Location:</span>
-                              <span className="font-medium">{selectedBook.location}</span>
+                              <span className="text-gray-700 font-medium">Location:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.location}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-600">Call Number:</span>
-                              <span className="font-medium">{selectedBook.callNumber}</span>
+                              <span className="text-gray-700 font-medium">Call Number:</span>
+                              <span className="font-semibold text-gray-900 font-mono text-xs">{selectedBook.callNumber}</span>
                             </div>
                           </div>
 
                           <div className="mt-4">
-                            <h4 className="font-semibold text-gray-900 mb-2">Subjects</h4>
+                            <h4 className="font-semibold text-gray-900 mb-3">Subjects</h4>
                             <div className="flex flex-wrap gap-2">
                               {selectedBook.subjects.map((subject, index) => (
-                                <span key={index} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
                                   {subject}
                                 </span>
                               ))}
@@ -872,6 +713,11 @@ export default function BooksPage() {
                       {/* Action Buttons */}
                       <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
                         <button
+                          onClick={() => {
+                            if (selectedBook.status === "Available") {
+                              setShowBorrowModal(true)
+                            }
+                          }}
                           className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
                             selectedBook.status === "Available"
                               ? "bg-blue-600 hover:bg-blue-700 text-white"
@@ -881,7 +727,7 @@ export default function BooksPage() {
                           }`}
                           disabled={selectedBook.status === "Checked Out"}
                         >
-                          {selectedBook.status === "Available" ? "Borrow Book" : 
+                          {selectedBook.status === "Available" ? "Request to Borrow" : 
                            selectedBook.status === "Reserved" ? "Join Waiting List" : "Currently Unavailable"}
                         </button>
                         
@@ -907,6 +753,51 @@ export default function BooksPage() {
           </div>
         </div>
       )}
+
+      {/* Borrow Modal */}
+      {showBorrowModal && selectedBook && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">
+              Request to Borrow: {selectedBook.title}
+            </h3>
+            
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-800 mb-3">
+                Reason for borrowing (optional)
+              </label>
+              <textarea
+                value={borrowReason}
+                onChange={(e) => setBorrowReason(e.target.value)}
+                placeholder="Please describe why you want to borrow this book..."
+                rows={4}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 text-base leading-relaxed resize-none"
+              />
+              <p className="mt-2 text-xs text-gray-600">This helps the librarian understand your academic or research needs.</p>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowBorrowModal(false)
+                  setBorrowReason('')
+                  setSelectedBook(null)
+                }}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-800 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleBorrowRequest}
+                disabled={submitting}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {submitting ? 'Submitting...' : 'Submit Request'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
-  );
+  )
 }

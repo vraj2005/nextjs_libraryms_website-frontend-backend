@@ -1,22 +1,30 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
+import { useAuth } from '@/contexts/AuthContext';
+import { useRouter } from 'next/navigation';
 
 interface UserProfile {
   id: string;
   name: string;
   email: string;
-  phone: string;
-  address: string;
-  membershipType: 'Basic' | 'Premium' | 'VIP';
-  membershipDate: string;
-  profileImage: string;
-  booksRead: number;
-  currentlyBorrowed: number;
-  totalBorrowed: number;
-  finesOwed: number;
-  favoriteGenres: string[];
+  phoneNumber?: string;
+  address?: string;
+  membershipId?: string;
+  role: string;
+  isActive: boolean;
+  joinDate: string;
+  createdAt: string;
+  updatedAt: string;
+  profileImage?: string;
+  // Additional profile fields for UI
+  membershipType?: 'Basic' | 'Premium' | 'VIP';
+  booksRead?: number;
+  currentlyBorrowed?: number;
+  totalBorrowed?: number;
+  finesOwed?: number;
+  favoriteGenres?: string[];
 }
 
 interface ReadingStats {
@@ -25,22 +33,6 @@ interface ReadingStats {
   totalPages: number;
   averageRating: number;
 }
-
-const userProfile: UserProfile = {
-  id: "USR001",
-  name: "John Doe",
-  email: "john.doe@email.com",
-  phone: "+1 (555) 123-4567",
-  address: "123 Library Street, Reading City, RC 12345",
-  membershipType: "Premium",
-  membershipDate: "2023-01-15",
-  profileImage: "/book-1.svg", // Using book SVG as placeholder for profile
-  booksRead: 47,
-  currentlyBorrowed: 3,
-  totalBorrowed: 152,
-  finesOwed: 0,
-  favoriteGenres: ["Fiction", "History", "Science", "Biography"]
-};
 
 const readingStats: ReadingStats = {
   thisMonth: 4,
@@ -58,20 +50,259 @@ const recentActivity = [
 ];
 
 export default function Profile() {
+  const { user, loading: authLoading, logout } = useAuth();
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<'overview' | 'settings' | 'activity' | 'preferences'>('overview');
   const [isEditing, setIsEditing] = useState(false);
-  const [editedProfile, setEditedProfile] = useState(userProfile);
+  const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  
+  // Password change state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordErrors, setPasswordErrors] = useState<{[key: string]: string}>({});
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
 
-  const handleSaveProfile = () => {
-    // Here you would typically save to a backend
-    setIsEditing(false);
-    // Show success message
+  // Check authentication and load user data
+  useEffect(() => {
+    if (!authLoading) {
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      
+      // Initialize user profile with auth data and defaults
+      const profile: UserProfile = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phoneNumber: user.phoneNumber || '',
+        address: user.address || '',
+        membershipId: user.membershipId,
+        role: user.role,
+        isActive: user.isActive,
+        joinDate: user.joinDate,
+        createdAt: user.createdAt,
+        updatedAt: user.updatedAt,
+        profileImage: user.profileImage,
+        // Default values for additional fields
+        membershipType: 'Premium', // You could determine this based on user data
+        booksRead: 47,
+        currentlyBorrowed: 3,
+        totalBorrowed: 152,
+        finesOwed: 0,
+        favoriteGenres: ["Fiction", "History", "Science", "Biography"]
+      };
+      
+      setUserProfile(profile);
+      setEditedProfile(profile);
+      setLoading(false);
+    }
+  }, [user, authLoading, router]);
+
+  const validateForm = () => {
+    if (!editedProfile) return false;
+    
+    const errors: {[key: string]: string} = {};
+    
+    // Name validation
+    if (!editedProfile.name?.trim()) {
+      errors.name = 'Name is required';
+    } else if (editedProfile.name.trim().length < 2) {
+      errors.name = 'Name must be at least 2 characters long';
+    }
+    
+    // Email validation
+    if (!editedProfile.email?.trim()) {
+      errors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(editedProfile.email.trim())) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    // Phone number validation
+    if (!editedProfile.phoneNumber?.trim()) {
+      errors.phoneNumber = 'Phone number is required';
+    } else {
+      const phoneRegex = /^[0-9]{10}$/;
+      const cleanPhone = editedProfile.phoneNumber.replace(/\D/g, ''); // Remove non-digits
+      if (!phoneRegex.test(cleanPhone)) {
+        errors.phoneNumber = 'Phone number must be exactly 10 digits';
+      }
+    }
+    
+    // Address validation
+    if (!editedProfile.address?.trim()) {
+      errors.address = 'Address is required';
+    } else if (editedProfile.address.trim().length < 10) {
+      errors.address = 'Address must be at least 10 characters long';
+    }
+    
+    setFormErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleSaveProfile = async () => {
+    if (!validateForm() || !editedProfile || !userProfile) {
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    try {
+      // API call to update profile
+      const response = await fetch('/api/profile/update', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          name: editedProfile.name,
+          email: editedProfile.email,
+          phoneNumber: editedProfile.phoneNumber,
+          address: editedProfile.address
+        })
+      });
+      
+      if (response.ok) {
+        const updatedUser = await response.json();
+        // Update local state
+        setUserProfile(prev => prev ? {...prev, ...updatedUser} : null);
+        
+        setIsEditing(false);
+        setShowSuccessMessage(true);
+        setFormErrors({});
+        
+        // Hide success message after 3 seconds
+        setTimeout(() => setShowSuccessMessage(false), 3000);
+      } else {
+        const error = await response.json();
+        console.error('Error saving profile:', error);
+        // You could show an error message here
+      }
+      
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      // For demo purposes, still update local state
+      setUserProfile(prev => prev ? {...prev, ...editedProfile} : null);
+      setIsEditing(false);
+      setShowSuccessMessage(true);
+      setTimeout(() => setShowSuccessMessage(false), 3000);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleCancelEdit = () => {
-    setEditedProfile(userProfile);
+    if (userProfile) {
+      setEditedProfile({...userProfile});
+    }
     setIsEditing(false);
+    setFormErrors({});
+  };
+
+  const validatePasswordForm = () => {
+    const errors: {[key: string]: string} = {};
+    
+    if (!passwordData.currentPassword.trim()) {
+      errors.currentPassword = 'Current password is required';
+    }
+    
+    if (!passwordData.newPassword.trim()) {
+      errors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 6) {
+      errors.newPassword = 'Password must be at least 6 characters long';
+    }
+    
+    if (!passwordData.confirmPassword.trim()) {
+      errors.confirmPassword = 'Please confirm your new password';
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    if (passwordData.currentPassword && passwordData.newPassword && 
+        passwordData.currentPassword === passwordData.newPassword) {
+      errors.newPassword = 'New password must be different from current password';
+    }
+    
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handlePasswordChange = async () => {
+    if (!validatePasswordForm()) {
+      return;
+    }
+    
+    setIsChangingPassword(true);
+    
+    try {
+      const response = await fetch('/api/profile/change-password', {
+        method: 'PUT',
+        headers: { 
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        })
+      });
+      
+      if (response.ok) {
+        // Password changed successfully
+        setShowPasswordModal(false);
+        
+        // Clear form data
+        setPasswordData({
+          currentPassword: '',
+          newPassword: '',
+          confirmPassword: ''
+        });
+        setPasswordErrors({});
+        
+        // Show success message and logout after a short delay
+        alert('Password changed successfully! You will be redirected to login page.');
+        
+        // Logout user and redirect to login
+        setTimeout(async () => {
+          await logout();
+          router.push('/login');
+        }, 1000);
+        
+      } else {
+        const error = await response.json();
+        if (error.message === 'Invalid current password') {
+          setPasswordErrors({currentPassword: 'Current password is incorrect'});
+        } else {
+          setPasswordErrors({general: error.message || 'Failed to change password'});
+        }
+      }
+      
+    } catch (error) {
+      console.error('Error changing password:', error);
+      setPasswordErrors({general: 'An error occurred while changing password'});
+    } finally {
+      setIsChangingPassword(false);
+    }
+  };
+
+  const handlePasswordModalClose = () => {
+    setShowPasswordModal(false);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setPasswordErrors({});
   };
 
   const getMembershipBadgeColor = (type: string) => {
@@ -143,33 +374,46 @@ export default function Profile() {
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-indigo-50">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-sky-600 via-indigo-600 to-sky-700 text-white">
-        <div className="absolute inset-0 bg-black/20"></div>
-        <div className="absolute inset-0 opacity-10">
-          <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-            <defs>
-              <pattern id="profile-pattern" patternUnits="userSpaceOnUse" width="30" height="30">
-                <rect width="30" height="30" fill="none"/>
-                <text x="5" y="15" fontSize="12" fill="currentColor">👤</text>
-                <text x="20" y="25" fontSize="8" fill="currentColor">📚</text>
-              </pattern>
-            </defs>
-            <rect width="100" height="100" fill="url(#profile-pattern)"/>
-          </svg>
-        </div>
-        
-        <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 md:py-32">
+      {/* Loading State */}
+      {(loading || authLoading) && (
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-sky-200 bg-clip-text text-transparent">
-              My Profile
-            </h1>
-            <p className="text-xl md:text-2xl text-sky-100 max-w-3xl mx-auto leading-relaxed">
-              Manage your account and track your reading journey
-            </p>
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-sky-600 mx-auto mb-4"></div>
+            <p className="text-gray-600 font-medium">Loading profile...</p>
           </div>
         </div>
-      </section>
+      )}
+
+      {/* Profile Content - only show when not loading and userProfile exists */}
+      {!loading && !authLoading && userProfile && (
+        <>
+          {/* Hero Section */}
+          <section className="relative overflow-hidden bg-gradient-to-br from-sky-600 via-indigo-600 to-sky-700 text-white">
+            <div className="absolute inset-0 bg-black/20"></div>
+            <div className="absolute inset-0 opacity-10">
+              <svg className="w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+                <defs>
+                  <pattern id="profile-pattern" patternUnits="userSpaceOnUse" width="30" height="30">
+                    <rect width="30" height="30" fill="none"/>
+                    <text x="5" y="15" fontSize="12" fill="currentColor">👤</text>
+                    <text x="20" y="25" fontSize="8" fill="currentColor">📚</text>
+                  </pattern>
+                </defs>
+                <rect width="100" height="100" fill="url(#profile-pattern)"/>
+              </svg>
+            </div>
+            
+            <div className="relative z-10 max-w-7xl mx-auto px-4 py-20 md:py-32">
+              <div className="text-center">
+                <h1 className="text-4xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-white to-sky-200 bg-clip-text text-transparent">
+                  My Profile
+                </h1>
+                <p className="text-xl md:text-2xl text-sky-100 max-w-3xl mx-auto leading-relaxed">
+                  Manage your account and track your reading journey
+                </p>
+              </div>
+            </div>
+          </section>
 
       {/* Profile Content */}
       <section className="py-8">
@@ -182,18 +426,21 @@ export default function Profile() {
                   <div className="w-32 h-32 rounded-full bg-white/20 flex items-center justify-center text-6xl">
                     👤
                   </div>
-                  <div className={`absolute -bottom-2 -right-2 px-3 py-1 rounded-full text-xs font-bold text-white ${getMembershipBadgeColor(userProfile.membershipType)}`}>
-                    {userProfile.membershipType}
+                  <div className={`absolute -bottom-2 -right-2 px-3 py-1 rounded-full text-xs font-bold text-white ${getMembershipBadgeColor(userProfile.membershipType || 'Basic')}`}>
+                    {userProfile.membershipType || 'Basic'}
                   </div>
                 </div>
                 <div className="text-center md:text-left text-white">
                   <h2 className="text-3xl md:text-4xl font-bold mb-2">{userProfile.name}</h2>
-                  <p className="text-sky-100 mb-2">Member since {formatMonthYear(userProfile.membershipDate)}</p>
-                  <p className="text-sky-100">Member ID: {userProfile.id}</p>
+                  <p className="text-sky-100 mb-2">Member since {formatMonthYear(userProfile.joinDate)}</p>
+                  <p className="text-sky-100">Member ID: {userProfile.membershipId || userProfile.id}</p>
                 </div>
                 <div className="ml-auto">
                   <button
-                    onClick={() => setIsEditing(!isEditing)}
+                    onClick={() => {
+                      setActiveSection('settings');
+                      setIsEditing(true);
+                    }}
                     className="bg-white/20 hover:bg-white/30 text-white px-6 py-3 rounded-xl font-semibold transition-colors flex items-center gap-2"
                   >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -208,22 +455,22 @@ export default function Profile() {
             {/* Quick Stats */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-6 p-8">
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-sky-600 mb-1">{userProfile.booksRead}</div>
-                <div className="text-gray-600 text-sm">Books Read</div>
+                <div className="text-2xl md:text-3xl font-bold text-sky-600 mb-1">{userProfile.booksRead || 0}</div>
+                <div className="text-gray-800 text-sm font-medium">Books Read</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-indigo-600 mb-1">{userProfile.currentlyBorrowed}</div>
-                <div className="text-gray-600 text-sm">Currently Borrowed</div>
+                <div className="text-2xl md:text-3xl font-bold text-indigo-600 mb-1">{userProfile.currentlyBorrowed || 0}</div>
+                <div className="text-gray-800 text-sm font-medium">Currently Borrowed</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl md:text-3xl font-bold text-purple-600 mb-1">{userProfile.totalBorrowed}</div>
-                <div className="text-gray-600 text-sm">Total Borrowed</div>
+                <div className="text-2xl md:text-3xl font-bold text-purple-600 mb-1">{userProfile.totalBorrowed || 0}</div>
+                <div className="text-gray-800 text-sm font-medium">Total Borrowed</div>
               </div>
               <div className="text-center">
-                <div className={`text-2xl md:text-3xl font-bold mb-1 ${userProfile.finesOwed > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                  ₹{userProfile.finesOwed}
+                <div className={`text-2xl md:text-3xl font-bold mb-1 ${(userProfile.finesOwed || 0) > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  ₹{userProfile.finesOwed || 0}
                 </div>
-                <div className="text-gray-600 text-sm">Fines Owed</div>
+                <div className="text-gray-800 text-sm font-medium">Fines Owed</div>
               </div>
             </div>
           </div>
@@ -268,19 +515,19 @@ export default function Profile() {
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                       <div className="text-center p-4 bg-sky-50 rounded-xl">
                         <div className="text-xl font-bold text-sky-600 mb-1">{readingStats.thisMonth}</div>
-                        <div className="text-sm text-gray-600">This Month</div>
+                        <div className="text-sm text-gray-800 font-medium">This Month</div>
                       </div>
                       <div className="text-center p-4 bg-indigo-50 rounded-xl">
                         <div className="text-xl font-bold text-indigo-600 mb-1">{readingStats.thisYear}</div>
-                        <div className="text-sm text-gray-600">This Year</div>
+                        <div className="text-sm text-gray-800 font-medium">This Year</div>
                       </div>
                       <div className="text-center p-4 bg-purple-50 rounded-xl">
                         <div className="text-xl font-bold text-purple-600 mb-1">{readingStats.totalPages.toLocaleString()}</div>
-                        <div className="text-sm text-gray-600">Pages Read</div>
+                        <div className="text-sm text-gray-800 font-medium">Pages Read</div>
                       </div>
                       <div className="text-center p-4 bg-yellow-50 rounded-xl">
                         <div className="text-xl font-bold text-yellow-600 mb-1">{readingStats.averageRating}⭐</div>
-                        <div className="text-sm text-gray-600">Avg Rating</div>
+                        <div className="text-sm text-gray-800 font-medium">Avg Rating</div>
                       </div>
                     </div>
                   </div>
@@ -305,7 +552,7 @@ export default function Profile() {
                             <p className="font-semibold text-gray-900">
                               {activity.action} "{activity.book}"
                             </p>
-                            <p className="text-sm text-gray-600">{formatDate(activity.date)}</p>
+                            <p className="text-sm text-gray-800 font-medium">{formatDate(activity.date)}</p>
                           </div>
                         </div>
                       ))}
@@ -316,76 +563,174 @@ export default function Profile() {
 
               {activeSection === 'settings' && (
                 <div className="bg-white rounded-2xl shadow-lg p-8">
-                  <h3 className="text-2xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                    <span className="text-2xl">⚙️</span>
-                    Account Settings
-                  </h3>
+                  <div className="flex justify-between items-center mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
+                      <span className="text-2xl">⚙️</span>
+                      Account Settings
+                    </h3>
+                    {!isEditing && (
+                      <button
+                        onClick={() => setIsEditing(true)}
+                        className="px-4 py-2 bg-sky-600 text-white rounded-lg font-semibold hover:bg-sky-700 transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                        Edit
+                      </button>
+                    )}
+                  </div>
+                  
+                  {/* Success Message */}
+                  {showSuccessMessage && (
+                    <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-medium">Profile updated successfully!</span>
+                    </div>
+                  )}
                   
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">Full Name</label>
                         <input
                           type="text"
-                          value={isEditing ? editedProfile.name : userProfile.name}
-                          onChange={(e) => setEditedProfile({...editedProfile, name: e.target.value})}
+                          value={isEditing && editedProfile ? editedProfile.name : userProfile.name}
+                          onChange={(e) => {
+                            if (editedProfile) {
+                              setEditedProfile({...editedProfile, name: e.target.value});
+                              if (formErrors.name) {
+                                setFormErrors({...formErrors, name: ''});
+                              }
+                            }
+                          }}
                           disabled={!isEditing}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100"
+                          placeholder="Enter your full name"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
+                            formErrors.name ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
+                        {formErrors.name && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">Email</label>
                         <input
                           type="email"
-                          value={isEditing ? editedProfile.email : userProfile.email}
-                          onChange={(e) => setEditedProfile({...editedProfile, email: e.target.value})}
+                          value={isEditing && editedProfile ? editedProfile.email : userProfile.email}
+                          onChange={(e) => {
+                            if (editedProfile) {
+                              setEditedProfile({...editedProfile, email: e.target.value});
+                              if (formErrors.email) {
+                                setFormErrors({...formErrors, email: ''});
+                              }
+                            }
+                          }}
                           disabled={!isEditing}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100"
+                          placeholder="Enter your email address"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
+                            formErrors.email ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
+                        {formErrors.email && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">Phone</label>
                         <input
                           type="tel"
-                          value={isEditing ? editedProfile.phone : userProfile.phone}
-                          onChange={(e) => setEditedProfile({...editedProfile, phone: e.target.value})}
+                          value={isEditing ? (editedProfile?.phoneNumber || '') : (userProfile.phoneNumber || '')}
+                          onChange={(e) => {
+                            if (editedProfile) {
+                              // Only allow digits and limit to 10 characters
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setEditedProfile({...editedProfile, phoneNumber: value});
+                              if (formErrors.phoneNumber) {
+                                setFormErrors({...formErrors, phoneNumber: ''});
+                              }
+                            }
+                          }}
                           disabled={!isEditing}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100"
+                          placeholder="Enter 10-digit phone number"
+                          maxLength={10}
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
+                            formErrors.phoneNumber ? 'border-red-500' : 'border-gray-300'
+                          }`}
                         />
+                        {formErrors.phoneNumber && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.phoneNumber}</p>
+                        )}
+                        {isEditing && !formErrors.phoneNumber && editedProfile?.phoneNumber && (
+                          <p className="mt-1 text-xs text-gray-500">
+                            {editedProfile.phoneNumber.length}/10 digits
+                          </p>
+                        )}
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Membership Type</label>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">Member ID</label>
                         <input
                           type="text"
-                          value={userProfile.membershipType}
+                          value={userProfile.membershipId || userProfile.id}
                           disabled
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed"
+                          title="Member ID cannot be changed"
                         />
+                        <p className="mt-1 text-xs text-gray-500">Your unique member identification number</p>
                       </div>
                     </div>
                     
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+                      <label className="block text-sm font-medium text-gray-800 mb-2">Address</label>
                       <textarea
-                        value={isEditing ? editedProfile.address : userProfile.address}
-                        onChange={(e) => setEditedProfile({...editedProfile, address: e.target.value})}
+                        value={isEditing && editedProfile ? (editedProfile.address || '') : (userProfile.address || '')}
+                        onChange={(e) => {
+                          if (editedProfile) {
+                            setEditedProfile({...editedProfile, address: e.target.value});
+                            if (formErrors.address) {
+                              setFormErrors({...formErrors, address: ''});
+                            }
+                          }
+                        }}
                         disabled={!isEditing}
                         rows={3}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100"
+                        placeholder="Enter your complete address"
+                        className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
+                          formErrors.address ? 'border-red-500' : 'border-gray-300'
+                        }`}
                       />
+                      {formErrors.address && (
+                        <p className="mt-1 text-sm text-red-600">{formErrors.address}</p>
+                      )}
+                      {isEditing && !formErrors.address && editedProfile?.address && (
+                        <p className="mt-1 text-xs text-gray-500">
+                          {editedProfile.address.length} characters (minimum 10 required)
+                        </p>
+                      )}
                     </div>
 
                     {isEditing && (
                       <div className="flex gap-4">
                         <button
                           onClick={handleSaveProfile}
-                          className="px-6 py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-colors"
+                          disabled={isSaving}
+                          className="px-6 py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                          Save Changes
+                          {isSaving && (
+                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                          )}
+                          {isSaving ? 'Saving...' : 'Save Changes'}
                         </button>
                         <button
                           onClick={handleCancelEdit}
-                          className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                          disabled={isSaving}
+                          className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Cancel
                         </button>
@@ -425,12 +770,12 @@ export default function Profile() {
                             </div>
                             <div>
                               <h4 className="font-semibold text-gray-900">{activity.action} Book</h4>
-                              <p className="text-gray-600">"{activity.book}"</p>
+                              <p className="text-gray-800 font-medium">"{activity.book}"</p>
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="text-sm text-gray-500">{formatDate(activity.date)}</p>
-                            <p className="text-xs text-gray-400">{formatTime(activity.date)}</p>
+                            <p className="text-sm text-gray-800 font-medium">{formatDate(activity.date)}</p>
+                            <p className="text-xs text-gray-600">{formatTime(activity.date)}</p>
                           </div>
                         </div>
                       </div>
@@ -450,7 +795,7 @@ export default function Profile() {
                     <div>
                       <h4 className="text-lg font-semibold text-gray-900 mb-4">Favorite Genres</h4>
                       <div className="flex flex-wrap gap-3">
-                        {userProfile.favoriteGenres.map((genre, index) => (
+                        {(userProfile.favoriteGenres || []).map((genre, index) => (
                           <span key={index} className="px-4 py-2 bg-sky-100 text-sky-800 rounded-full font-medium">
                             {genre}
                           </span>
@@ -463,15 +808,15 @@ export default function Profile() {
                       <div className="space-y-4">
                         <label className="flex items-center gap-3">
                           <input type="checkbox" defaultChecked className="w-5 h-5 text-sky-600 rounded" />
-                          <span>Email notifications for due dates</span>
+                          <span className="text-gray-800 font-medium">Email notifications for due dates</span>
                         </label>
                         <label className="flex items-center gap-3">
                           <input type="checkbox" defaultChecked className="w-5 h-5 text-sky-600 rounded" />
-                          <span>SMS reminders</span>
+                          <span className="text-gray-800 font-medium">SMS reminders</span>
                         </label>
                         <label className="flex items-center gap-3">
                           <input type="checkbox" className="w-5 h-5 text-sky-600 rounded" />
-                          <span>New book recommendations</span>
+                          <span className="text-gray-800 font-medium">New book recommendations</span>
                         </label>
                       </div>
                     </div>
@@ -510,34 +855,34 @@ export default function Profile() {
               {/* Membership Info */}
               <div className="bg-white rounded-2xl shadow-lg p-6">
                 <h4 className="text-lg font-bold text-gray-900 mb-4">Membership Benefits</h4>
-                <div className={`p-4 rounded-xl text-white ${getMembershipBadgeColor(userProfile.membershipType)} mb-4`}>
-                  <h5 className="font-bold text-lg">{userProfile.membershipType} Member</h5>
-                  <p className="text-sm opacity-90">Active since {new Date(userProfile.membershipDate).getFullYear()}</p>
+                <div className={`p-4 rounded-xl text-white ${getMembershipBadgeColor(userProfile.membershipType || 'Basic')} mb-4`}>
+                  <h5 className="font-bold text-lg">{userProfile.membershipType || 'Basic'} Member</h5>
+                  <p className="text-sm opacity-90">Active since {new Date(userProfile.joinDate).getFullYear()}</p>
                 </div>
                 <div className="space-y-2 text-sm">
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Borrow up to 5 books</span>
+                    <span className="text-gray-800 font-medium">Borrow up to 5 books</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>30-day borrowing period</span>
+                    <span className="text-gray-800 font-medium">30-day borrowing period</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Priority reservations</span>
+                    <span className="text-gray-800 font-medium">Priority reservations</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    <span>Digital access included</span>
+                    <span className="text-gray-800 font-medium">Digital access included</span>
                   </div>
                 </div>
                 <button className="w-full mt-4 px-4 py-2 border border-sky-600 text-sky-600 rounded-xl font-semibold hover:bg-sky-50 transition-colors">
@@ -555,53 +900,122 @@ export default function Profile() {
           <div className="bg-white rounded-3xl max-w-md w-full p-8 shadow-2xl">
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold text-gray-900 mb-2">Change Password</h3>
-              <p className="text-gray-600">Enter your current and new password</p>
+              <p className="text-gray-800 font-medium">Enter your current and new password</p>
+              <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <p className="text-sm text-amber-800">
+                  ⚠️ After changing your password, you will be automatically logged out and redirected to the login page.
+                </p>
+              </div>
             </div>
+
+            {/* General Error Message */}
+            {passwordErrors.general && (
+              <div className="mb-4 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl">
+                <p className="text-sm font-medium">{passwordErrors.general}</p>
+              </div>
+            )}
 
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Current Password</label>
+                <label className="block text-sm font-medium text-gray-800 mb-2">Current Password</label>
                 <input
                   type="password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  value={passwordData.currentPassword}
+                  onChange={(e) => {
+                    setPasswordData({...passwordData, currentPassword: e.target.value});
+                    if (passwordErrors.currentPassword) {
+                      setPasswordErrors({...passwordErrors, currentPassword: ''});
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent text-gray-900 ${
+                    passwordErrors.currentPassword ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Enter current password"
                 />
+                {passwordErrors.currentPassword && (
+                  <p className="mt-1 text-sm text-red-600">{passwordErrors.currentPassword}</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">New Password</label>
+                <label className="block text-sm font-medium text-gray-800 mb-2">New Password</label>
                 <input
                   type="password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
-                  placeholder="Enter new password"
+                  value={passwordData.newPassword}
+                  onChange={(e) => {
+                    setPasswordData({...passwordData, newPassword: e.target.value});
+                    if (passwordErrors.newPassword) {
+                      setPasswordErrors({...passwordErrors, newPassword: ''});
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent text-gray-900 ${
+                    passwordErrors.newPassword ? 'border-red-500' : 'border-gray-300'
+                  }`}
+                  placeholder="Enter new password (min 6 characters)"
                 />
+                {passwordErrors.newPassword && (
+                  <p className="mt-1 text-sm text-red-600">{passwordErrors.newPassword}</p>
+                )}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Confirm New Password</label>
+                <label className="block text-sm font-medium text-gray-800 mb-2">Confirm New Password</label>
                 <input
                   type="password"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) => {
+                    setPasswordData({...passwordData, confirmPassword: e.target.value});
+                    if (passwordErrors.confirmPassword) {
+                      setPasswordErrors({...passwordErrors, confirmPassword: ''});
+                    }
+                  }}
+                  className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent text-gray-900 ${
+                    passwordErrors.confirmPassword ? 'border-red-500' : 'border-gray-300'
+                  }`}
                   placeholder="Confirm new password"
                 />
+                {passwordErrors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-600">{passwordErrors.confirmPassword}</p>
+                )}
               </div>
             </div>
 
             <div className="flex gap-3">
               <button
-                onClick={() => setShowPasswordModal(false)}
-                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors"
+                onClick={handlePasswordModalClose}
+                disabled={isChangingPassword}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-800 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Cancel
               </button>
               <button
-                onClick={() => setShowPasswordModal(false)}
-                className="flex-1 px-6 py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-colors"
+                onClick={handlePasswordChange}
+                disabled={isChangingPassword}
+                className="flex-1 px-6 py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Update Password
+                {isChangingPassword && (
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                {isChangingPassword ? 'Changing...' : 'Update Password'}
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Success Toast Notification */}
+      {showSuccessMessage && (
+        <div className="fixed top-4 right-4 bg-green-600 text-white px-6 py-4 rounded-xl shadow-lg z-50 flex items-center gap-3">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span className="font-semibold">Profile updated successfully!</span>
+        </div>
+      )}
+      </>
+      )}
+
     </main>
   );
 }

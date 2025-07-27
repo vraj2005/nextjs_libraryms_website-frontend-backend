@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
 	const [formData, setFormData] = useState({
@@ -15,6 +16,7 @@ export default function LoginPage() {
 	const [isLoading, setIsLoading] = useState(false);
 	const [error, setError] = useState("");
 	const router = useRouter();
+	const { login } = useAuth();
 
 	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
 		const { name, value, type, checked } = e.target;
@@ -30,28 +32,33 @@ export default function LoginPage() {
 		setIsLoading(true);
 		setError("");
 		
-		// Simulate API call
-		await new Promise((resolve) => setTimeout(resolve, 1500));
-		
-		// Check for admin credentials
-		if (formData.email === "admin" && formData.password === "admin") {
-			localStorage.setItem('adminToken', 'admin_authenticated');
-			localStorage.setItem('adminUser', JSON.stringify({
-				username: 'admin',
-				role: 'Super Admin',
-				loginTime: new Date().toISOString()
-			}));
-			router.push('/admin/dashboard');
-		} else if (formData.email && formData.password) {
-			// Regular user login (simulated)
-			console.log("Regular user login:", formData);
-			// You can add regular user login logic here
-			router.push('/');
-		} else {
-			setError("Please enter valid credentials");
+		try {
+			const result = await login(formData.email, formData.password);
+			
+			if (result.success) {
+				// Check if user is admin and redirect accordingly
+				if (result.user?.role === 'ADMIN') {
+					// Set admin session for existing admin dashboard compatibility
+					localStorage.setItem("adminAuth", "true");
+					localStorage.setItem("adminUser", JSON.stringify({
+						username: result.user.name,
+						email: result.user.email,
+						role: "Administrator",
+						loginTime: new Date().toISOString()
+					}));
+					router.push('/admin/dashboard');
+				} else {
+					// Regular user redirect to home
+					router.push('/');
+				}
+			} else {
+				setError(result.error || 'Login failed');
+			}
+		} catch (error) {
+			setError('An error occurred during login');
+		} finally {
+			setIsLoading(false);
 		}
-		
-		setIsLoading(false);
 	};
 
 	return (
@@ -96,12 +103,12 @@ export default function LoginPage() {
 						<form onSubmit={handleSubmit} className="space-y-6">
 							{/* Email Field */}
 							<div>
-								<label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+								<label htmlFor="email" className="block text-sm font-semibold text-gray-800 mb-2">
 									Email Address
 								</label>
 								<div className="relative">
 									<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-										<svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
 										</svg>
 									</div>
@@ -111,7 +118,7 @@ export default function LoginPage() {
 										name="email"
 										value={formData.email}
 										onChange={handleInputChange}
-										className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-gray-50/50"
+										className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
 										placeholder="Enter your email"
 										required
 									/>
@@ -120,12 +127,12 @@ export default function LoginPage() {
 
 							{/* Password Field */}
 							<div>
-								<label htmlFor="password" className="block text-sm font-semibold text-gray-700 mb-2">
+								<label htmlFor="password" className="block text-sm font-semibold text-gray-800 mb-2">
 									Password
 								</label>
 								<div className="relative">
 									<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-										<svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<svg className="h-5 w-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
 										</svg>
 									</div>
@@ -135,7 +142,7 @@ export default function LoginPage() {
 										name="password"
 										value={formData.password}
 										onChange={handleInputChange}
-										className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-gray-50/50"
+										className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
 										placeholder="Enter your password"
 										required
 									/>
@@ -145,11 +152,11 @@ export default function LoginPage() {
 										onClick={() => setShowPassword(!showPassword)}
 									>
 										{showPassword ? (
-											<svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<svg className="h-5 w-5 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
 											</svg>
 										) : (
-											<svg className="h-5 w-5 text-gray-400 hover:text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<svg className="h-5 w-5 text-gray-500 hover:text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
 											</svg>
@@ -160,25 +167,25 @@ export default function LoginPage() {
 
 							{/* Error Message */}
 							{error && (
-								<div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">
+								<div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl">
 									<div className="flex items-center gap-2">
-										<svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+										<svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
 											<path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 										</svg>
-										<span className="text-sm">{error}</span>
+										<span className="text-sm font-medium">{error}</span>
 									</div>
 								</div>
 							)}
 
 							{/* Admin Login Info */}
-							<div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded-xl">
+							<div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl">
 								<div className="flex items-start gap-2">
-									<svg className="w-5 h-5 text-blue-500 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+									<svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
 										<path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
 									</svg>
 									<div>
-										<p className="text-sm font-medium mb-1">Admin Access</p>
-										<p className="text-xs">Use "admin" for both email and password to access admin panel</p>
+										<p className="text-sm font-semibold mb-1">Admin Access</p>
+										<p className="text-xs font-medium">Use "admin" for both email and password to access admin dashboard</p>
 									</div>
 								</div>
 							</div>
@@ -194,13 +201,13 @@ export default function LoginPage() {
 										onChange={handleInputChange}
 										className="h-4 w-4 text-sky-600 focus:ring-sky-500 border-gray-300 rounded"
 									/>
-									<label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-700">
+									<label htmlFor="rememberMe" className="ml-2 block text-sm text-gray-800 font-medium">
 										Remember me
 									</label>
 								</div>
 								<Link
 									href="/forgot-password"
-									className="text-sm text-sky-600 hover:text-sky-800 font-medium transition-colors"
+									className="text-sm text-sky-600 hover:text-sky-800 font-semibold transition-colors"
 								>
 									Forgot password?
 								</Link>
@@ -250,7 +257,7 @@ export default function LoginPage() {
 									<path fill="currentColor" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
 									<path fill="currentColor" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
 								</svg>
-								<span className="ml-2 text-sm font-medium text-gray-700">Google</span>
+								<span className="ml-2 text-sm font-semibold text-gray-800">Google</span>
 							</button>
 							<button
 								type="button"
@@ -259,17 +266,17 @@ export default function LoginPage() {
 								<svg className="w-5 h-5 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
 									<path d="M12.017 0C5.396 0 .029 5.367.029 11.987c0 5.079 3.158 9.417 7.618 11.024-.105-.949-.199-2.403.041-3.439.219-.937 1.406-5.957 1.406-5.957s-.359-.719-.359-1.781c0-1.663.967-2.911 2.168-2.911 1.024 0 1.518.769 1.518 1.688 0 1.029-.653 2.567-.992 3.992-.285 1.193.6 2.165 1.775 2.165 2.128 0 3.768-2.245 3.768-5.487 0-2.861-2.063-4.869-5.008-4.869-3.41 0-5.409 2.562-5.409 5.199 0 1.033.394 2.143.889 2.741.097.118.112.221.085.345-.09.375-.293 1.199-.334 1.363-.053.225-.172.271-.402.165-1.495-.69-2.433-2.878-2.433-4.646 0-3.776 2.748-7.252 7.92-7.252 4.158 0 7.392 2.967 7.392 6.923 0 4.135-2.607 7.462-6.233 7.462-1.214 0-2.357-.629-2.746-1.378l-.747 2.848c-.269 1.045-1.004 2.352-1.498 3.146 1.123.345 2.306.535 3.55.535 6.624 0 11.99-5.367 11.99-11.988C24.007 5.367 18.641.001 12.017.001z"/>
 								</svg>
-								<span className="ml-2 text-sm font-medium text-gray-700">GitHub</span>
+								<span className="ml-2 text-sm font-semibold text-gray-800">GitHub</span>
 							</button>
 						</div>
 
 						{/* Sign Up Link */}
 						<div className="mt-8 text-center">
-							<p className="text-sm text-gray-600">
+							<p className="text-sm text-gray-700">
 								Don't have an account?{" "}
 								<Link
 									href="/register"
-									className="font-semibold text-sky-600 hover:text-sky-800 transition-colors"
+									className="font-bold text-sky-600 hover:text-sky-800 transition-colors"
 								>
 									Sign up here
 								</Link>
@@ -280,7 +287,7 @@ export default function LoginPage() {
 
 				{/* Footer */}
 				<div className="mt-6 text-center">
-					<p className="text-xs text-gray-500">
+					<p className="text-sm text-gray-700 font-medium">
 						© 2025 LibraryMS. Secure access to knowledge.
 					</p>
 				</div>
