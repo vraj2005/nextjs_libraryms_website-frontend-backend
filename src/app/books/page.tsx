@@ -8,52 +8,56 @@ interface Book {
   id: string
   title: string
   author: string
-  category: string
-  image: string
-  rating: number
-  status: string
-  description: string
-  publishYear: number
+  description?: string
   isbn: string
-  pages: number
-  language: string
-  publisher: string
-  edition: string
-  subjects: string[]
-  availability: {
-    total: number
-    available: number
-    borrowed: number
-    reserved?: number
+  totalCopies: number
+  availableCopies: number
+  publishedYear?: number
+  publisher?: string
+  image?: string
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+  category: {
+    id: string
+    name: string
+    description?: string
+    image?: string
   }
-  location: string
-  callNumber: string
-  format: string
-  price: number
+}
+
+interface Category {
+  id: string
+  name: string
+  description?: string
+  image?: string
+  _count: {
+    books: number
+  }
 }
 
 interface PaginationInfo {
   currentPage: number
   totalPages: number
   totalBooks: number
-  hasNextPage: boolean
-  hasPrevPage: boolean
+  limit: number
 }
 
 export default function BooksPage() {
   const { user } = useAuth()
   const [books, setBooks] = useState<Book[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [pagination, setPagination] = useState<PaginationInfo>({
     currentPage: 1,
     totalPages: 1,
     totalBooks: 0,
-    hasNextPage: false,
-    hasPrevPage: false
+    limit: 12
   })
   
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [selectedCategory, setSelectedCategory] = useState('all')
   const [selectedStatus, setSelectedStatus] = useState('all')
   const [sortBy, setSortBy] = useState('title')
@@ -67,9 +71,6 @@ export default function BooksPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const booksPerPage = 8
 
-  // Get unique categories from books
-  const categories = Array.from(new Set(books.map(book => book.category)))
-
   // Load favorites from localStorage
   useEffect(() => {
     const savedFavorites = localStorage.getItem('favorites')
@@ -77,6 +78,20 @@ export default function BooksPage() {
       setFavorites(JSON.parse(savedFavorites))
     }
   }, [])
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, 500) // 500ms delay
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
+
+  // Reset to first page when search or filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [debouncedSearchQuery, selectedCategory, selectedStatus, sortBy, sortOrder])
 
   const fetchBooks = async () => {
     try {
@@ -88,16 +103,30 @@ export default function BooksPage() {
         sortOrder
       })
 
-      if (searchQuery) params.append('search', searchQuery)
+      if (debouncedSearchQuery) params.append('search', debouncedSearchQuery)
       if (selectedCategory !== 'all') params.append('category', selectedCategory)
-      if (selectedStatus !== 'all') params.append('status', selectedStatus)
+      if (selectedStatus !== 'all') {
+        params.append('status', selectedStatus === 'available' ? 'available' : 'unavailable')
+      }
 
       const response = await fetch(`/api/books?${params}`)
       const data = await response.json()
 
       if (response.ok) {
-        setBooks(data.books)
-        setPagination(data.pagination)
+        let filteredBooks = data.books
+
+        // Client-side filtering for availability since API might not support it
+        if (selectedStatus === 'available') {
+          filteredBooks = data.books.filter((book: Book) => book.availableCopies > 0)
+        } else if (selectedStatus === 'unavailable') {
+          filteredBooks = data.books.filter((book: Book) => book.availableCopies === 0)
+        }
+
+        setBooks(filteredBooks)
+        setPagination({
+          ...data.pagination,
+          totalBooks: filteredBooks.length
+        })
       } else {
         setError(data.error || 'Failed to fetch books')
       }
@@ -109,9 +138,28 @@ export default function BooksPage() {
     }
   }
 
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch('/api/categories')
+      const data = await response.json()
+      
+      if (response.ok) {
+        setCategories(data.categories)
+      } else {
+        console.error('Failed to fetch categories:', data.error)
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error)
+    }
+  }
+
+  useEffect(() => {
+    fetchCategories()
+  }, [])
+
   useEffect(() => {
     fetchBooks()
-  }, [currentPage, searchQuery, selectedCategory, selectedStatus, sortBy, sortOrder])
+  }, [currentPage, debouncedSearchQuery, selectedCategory, selectedStatus, sortBy, sortOrder])
 
   const toggleFavorite = (bookId: string) => {
     const updatedFavorites = favorites.includes(bookId)
@@ -277,11 +325,16 @@ export default function BooksPage() {
                     placeholder="Search by title, author, subject..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent text-gray-700 pl-10"
+                    className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent text-gray-700 pl-10 pr-10"
                   />
                   <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z" />
                   </svg>
+                  {searchQuery !== debouncedSearchQuery && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600"></div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -296,7 +349,7 @@ export default function BooksPage() {
                 >
                   <option value="all">All Categories</option>
                   {categories.map(category => (
-                    <option key={category} value={category}>{category}</option>
+                    <option key={category.id} value={category.id}>{category.name}</option>
                   ))}
                 </select>
               </div>
@@ -311,9 +364,8 @@ export default function BooksPage() {
                   className="w-full px-4 py-3 rounded-xl border border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-300 focus:border-transparent text-gray-700"
                 >
                   <option value="all">All Status</option>
-                  <option value="Available">Available</option>
-                  <option value="Reserved">Reserved</option>
-                  <option value="Checked Out">Checked Out</option>
+                  <option value="available">Available</option>
+                  <option value="unavailable">Not Available</option>
                 </select>
               </div>
             </div>
@@ -373,10 +425,12 @@ export default function BooksPage() {
               <button
                 onClick={() => {
                   setSearchQuery("");
+                  setDebouncedSearchQuery("");
                   setSelectedCategory("all");
                   setSelectedStatus("all");
                   setSortBy("title");
                   setSortOrder("asc");
+                  setCurrentPage(1);
                 }}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg transition-colors duration-200"
               >
@@ -394,7 +448,7 @@ export default function BooksPage() {
                   >
                     <div className="relative h-56 md:h-64">
                       <Image
-                        src={book.image}
+                        src={book.image || '/book-placeholder.jpg'}
                         alt={book.title}
                         fill
                         className="object-contain bg-gradient-to-br from-blue-50 to-indigo-50"
@@ -407,22 +461,20 @@ export default function BooksPage() {
                       <div className="absolute top-4 right-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            book.status === "Available"
+                            book.availableCopies > 0
                               ? "bg-green-100 text-green-800"
-                              : book.status === "Reserved"
-                              ? "bg-yellow-100 text-yellow-800"
                               : "bg-red-100 text-red-800"
                           }`}
                         >
-                          {book.status}
+                          {book.availableCopies > 0 ? "Available" : "Not Available"}
                         </span>
                       </div>
                       <div className="absolute bottom-4 right-4">
                         <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1">
-                          <svg className="w-3 h-3 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                           </svg>
-                          <span className="text-xs font-semibold text-gray-700">{book.rating}</span>
+                          <span className="text-xs font-semibold text-gray-700">{book.availableCopies}/{book.totalCopies}</span>
                         </div>
                       </div>
                     </div>
@@ -430,9 +482,9 @@ export default function BooksPage() {
                     <div className="p-4 md:p-6">
                       <div className="flex items-center gap-2 mb-3">
                         <span className="text-blue-600 text-xs md:text-sm font-medium bg-blue-100 px-2 py-1 rounded-full">
-                          {book.category}
+                          {book.category.name}
                         </span>
-                        <span className="text-gray-500 text-xs md:text-sm">{book.publishYear}</span>
+                        <span className="text-gray-500 text-xs md:text-sm">{book.publishedYear}</span>
                       </div>
                       
                       <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
@@ -443,13 +495,15 @@ export default function BooksPage() {
                       
                       <div className="space-y-3">
                         <div className="flex items-center justify-between text-sm text-gray-500">
-                          <span>Pages: {book.pages}</span>
-                          <span>{book.language}</span>
+                          <span>ISBN: {book.isbn}</span>
+                          <span>{book.publisher || 'Unknown Publisher'}</span>
                         </div>
                         
                         <div className="flex items-center justify-between text-sm">
-                          <span className="text-gray-500">Available: {book.availability.available}/{book.availability.total}</span>
-                          <span className="font-semibold text-blue-600">{book.price}</span>
+                          <span className="text-gray-500">Available: {book.availableCopies}/{book.totalCopies}</span>
+                          <span className="font-semibold text-blue-600">
+                            {book.availableCopies > 0 ? 'In Stock' : 'Out of Stock'}
+                          </span>
                         </div>
                         
                         <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
@@ -461,14 +515,14 @@ export default function BooksPage() {
                                   setSelectedBook(book);
                                   setShowBorrowModal(true);
                                 }}
-                                disabled={book.status !== 'Available'}
+                                disabled={book.availableCopies === 0}
                                 className={`w-full px-4 py-2 rounded-full font-medium transition-all duration-200 ${
-                                  book.status === 'Available'
+                                  book.availableCopies > 0
                                     ? "bg-blue-600 text-white hover:bg-blue-700"
                                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
                                 }`}
                               >
-                                {book.status === 'Available' ? 'Request to Borrow' : 'Not Available'}
+                                {book.availableCopies > 0 ? 'Request to Borrow' : 'Not Available'}
                               </button>
                               <button
                                 onClick={(e) => {
@@ -572,8 +626,8 @@ export default function BooksPage() {
                   <div className="lg:col-span-1">
                     <div className="relative h-80 lg:h-96 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl overflow-hidden shadow-lg">
                       <Image
-                        src={selectedBook.image}
-                        alt={selectedBook.title}
+                        src={selectedBook!.image || '/book-placeholder.jpg'}
+                        alt={selectedBook!.title}
                         fill
                         className="object-contain"
                         sizes="(max-width: 1024px) 100vw, 33vw"
@@ -586,22 +640,16 @@ export default function BooksPage() {
                       <div className="space-y-3 text-sm">
                         <div className="flex justify-between">
                           <span className="text-gray-700 font-medium">Total Copies:</span>
-                          <span className="font-bold text-gray-900">{selectedBook.availability.total}</span>
+                          <span className="font-bold text-gray-900">{selectedBook!.totalCopies}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-700 font-medium">Available:</span>
-                          <span className="font-bold text-green-600">{selectedBook.availability.available}</span>
+                          <span className="font-bold text-green-600">{selectedBook!.availableCopies}</span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-700 font-medium">Borrowed:</span>
-                          <span className="font-bold text-blue-600">{selectedBook.availability.borrowed}</span>
+                          <span className="font-bold text-blue-600">{selectedBook!.totalCopies - selectedBook!.availableCopies}</span>
                         </div>
-                        {selectedBook.availability.reserved && (
-                          <div className="flex justify-between">
-                            <span className="text-gray-700 font-medium">Reserved:</span>
-                            <span className="font-bold text-yellow-600">{selectedBook.availability.reserved}</span>
-                          </div>
-                        )}
                       </div>
                     </div>
                   </div>
@@ -611,25 +659,23 @@ export default function BooksPage() {
                     <div className="space-y-6">
                       {/* Title and Author */}
                       <div>
-                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedBook.title}</h1>
-                        <p className="text-xl text-gray-600 mb-4">by {selectedBook.author}</p>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedBook!.title}</h1>
+                        <p className="text-xl text-gray-600 mb-4">by {selectedBook!.author}</p>
                         
                         <div className="flex items-center gap-4 mb-4">
                           <div className="flex items-center gap-1">
-                            <svg className="w-5 h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
-                            <span className="font-semibold text-gray-900">{selectedBook.rating}/5</span>
+                            <span className="font-semibold text-gray-900">ISBN: {selectedBook!.isbn}</span>
                           </div>
                           
                           <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                            selectedBook.status === "Available"
+                            selectedBook!.availableCopies > 0
                               ? "bg-green-100 text-green-800"
-                              : selectedBook.status === "Reserved"
-                              ? "bg-yellow-100 text-yellow-800"
                               : "bg-red-100 text-red-800"
                           }`}>
-                            {selectedBook.status}
+                            {selectedBook!.availableCopies > 0 ? "Available" : "Not Available"}
                           </span>
                         </div>
                       </div>
@@ -637,7 +683,7 @@ export default function BooksPage() {
                       {/* Description */}
                       <div>
                         <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
-                        <p className="text-gray-800 leading-relaxed text-base">{selectedBook.description}</p>
+                        <p className="text-gray-800 leading-relaxed text-base">{selectedBook!.description}</p>
                       </div>
 
                       {/* Book Details */}
@@ -647,35 +693,19 @@ export default function BooksPage() {
                           <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
                               <span className="text-gray-700 font-medium">Publisher:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.publisher}</span>
+                              <span className="font-semibold text-gray-900">{selectedBook!.publisher || 'Not specified'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-700 font-medium">Year:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.publishYear}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-700 font-medium">Edition:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.edition}</span>
+                              <span className="font-semibold text-gray-900">{selectedBook!.publishedYear || 'Not specified'}</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-gray-700 font-medium">ISBN:</span>
-                              <span className="font-semibold text-gray-900 font-mono text-xs">{selectedBook.isbn}</span>
+                              <span className="font-semibold text-gray-900 font-mono text-xs">{selectedBook!.isbn}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-700 font-medium">Pages:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.pages}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-700 font-medium">Language:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.language}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-700 font-medium">Format:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.format}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-gray-700 font-medium">Price:</span>
-                              <span className="font-bold text-blue-600 text-base">{selectedBook.price}</span>
+                              <span className="text-gray-700 font-medium">Active:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook!.isActive ? 'Yes' : 'No'}</span>
                             </div>
                           </div>
                         </div>
@@ -685,26 +715,21 @@ export default function BooksPage() {
                           <div className="space-y-3 text-sm">
                             <div className="flex justify-between">
                               <span className="text-gray-700 font-medium">Category:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.category}</span>
+                              <span className="font-semibold text-gray-900">{selectedBook!.category.name}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-700 font-medium">Location:</span>
-                              <span className="font-semibold text-gray-900">{selectedBook.location}</span>
+                              <span className="text-gray-700 font-medium">Total Copies:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook!.totalCopies}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-gray-700 font-medium">Call Number:</span>
-                              <span className="font-semibold text-gray-900 font-mono text-xs">{selectedBook.callNumber}</span>
+                              <span className="text-gray-700 font-medium">Available:</span>
+                              <span className="font-semibold text-green-600">{selectedBook!.availableCopies}</span>
                             </div>
-                          </div>
-
-                          <div className="mt-4">
-                            <h4 className="font-semibold text-gray-900 mb-3">Subjects</h4>
-                            <div className="flex flex-wrap gap-2">
-                              {selectedBook.subjects.map((subject, index) => (
-                                <span key={index} className="px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full">
-                                  {subject}
-                                </span>
-                              ))}
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Status:</span>
+                              <span className={`font-semibold ${selectedBook!.availableCopies > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {selectedBook!.availableCopies > 0 ? 'Available' : 'Not Available'}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -714,35 +739,32 @@ export default function BooksPage() {
                       <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
                         <button
                           onClick={() => {
-                            if (selectedBook.status === "Available") {
+                            if (selectedBook!.availableCopies > 0) {
                               setShowBorrowModal(true)
                             }
                           }}
                           className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
-                            selectedBook.status === "Available"
+                            selectedBook!.availableCopies > 0
                               ? "bg-blue-600 hover:bg-blue-700 text-white"
-                              : selectedBook.status === "Reserved"
-                              ? "bg-yellow-600 hover:bg-yellow-700 text-white"
                               : "bg-gray-400 text-gray-200 cursor-not-allowed"
                           }`}
-                          disabled={selectedBook.status === "Checked Out"}
+                          disabled={selectedBook!.availableCopies === 0}
                         >
-                          {selectedBook.status === "Available" ? "Request to Borrow" : 
-                           selectedBook.status === "Reserved" ? "Join Waiting List" : "Currently Unavailable"}
+                          {selectedBook!.availableCopies > 0 ? "Request to Borrow" : "Currently Unavailable"}
                         </button>
                         
                         <button
-                          onClick={() => toggleFavorite(selectedBook.id)}
+                          onClick={() => toggleFavorite(selectedBook!.id)}
                           className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
-                            favorites.includes(selectedBook.id)
+                            favorites.includes(selectedBook!.id)
                               ? "bg-red-500 hover:bg-red-600 text-white"
                               : "bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-500"
                           }`}
                         >
-                          <svg className="w-5 h-5" fill={favorites.includes(selectedBook.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <svg className="w-5 h-5" fill={favorites.includes(selectedBook!.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                           </svg>
-                          {favorites.includes(selectedBook.id) ? "Remove from Favorites" : "Add to Favorites"}
+                          {favorites.includes(selectedBook!.id) ? "Remove from Favorites" : "Add to Favorites"}
                         </button>
                       </div>
                     </div>
@@ -759,7 +781,7 @@ export default function BooksPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
             <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Request to Borrow: {selectedBook.title}
+              Request to Borrow: {selectedBook!.title}
             </h3>
             
             <div className="mb-6">
