@@ -190,19 +190,30 @@ export default function BooksPage() {
       const data = await response.json()
 
       if (response.ok) {
-        alert('Borrow request submitted successfully! You will be notified when the admin reviews your request.')
+        // Show success message
+        alert('✅ Borrow request submitted successfully!\n\nYour request has been sent to the admin for review. You will receive a notification once the admin makes a decision.\n\nCheck your notifications regularly for updates.')
+        
         setShowBorrowModal(false)
         setBorrowReason('')
         setSelectedBook(null)
         setShowBookModal(false)
-        // Refresh books to update availability
+        
+        // Refresh books to update any changes
         fetchBooks()
       } else {
-        alert(data.error || 'Failed to submit borrow request')
+        // Show specific error message
+        const errorMessage = data.error || 'Failed to submit borrow request'
+        if (errorMessage.includes('already have a pending')) {
+          alert('⚠️ Request Already Exists\n\nYou already have a pending or active request for this book. Please check your borrow requests or wait for the current request to be processed.')
+        } else if (errorMessage.includes('No copies available')) {
+          alert('❌ Book Unavailable\n\nSorry, there are no copies of this book available for borrowing at the moment. Please try again later.')
+        } else {
+          alert(`❌ Request Failed\n\n${errorMessage}`)
+        }
       }
     } catch (error) {
       console.error('Error submitting borrow request:', error)
-      alert('Failed to submit borrow request')
+      alert('❌ Network Error\n\nFailed to submit borrow request. Please check your internet connection and try again.')
     } finally {
       setSubmitting(false)
     }
@@ -787,24 +798,67 @@ export default function BooksPage() {
       {showBorrowModal && selectedBook && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
-            <h3 className="text-xl font-bold text-gray-900 mb-4">
-              Request to Borrow: {selectedBook!.title}
-            </h3>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Request to Borrow</h3>
+                <p className="text-sm text-gray-600">Submit your borrowing request</p>
+              </div>
+            </div>
             
+            {/* Book Info */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
+              <h4 className="font-bold text-gray-900 mb-1">{selectedBook!.title}</h4>
+              <p className="text-sm text-gray-600 mb-2">by {selectedBook!.author}</p>
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>ISBN: {selectedBook!.isbn}</span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  {selectedBook!.availableCopies} available
+                </span>
+              </div>
+            </div>
+
+            {/* Request Form */}
             <div className="mb-6">
               <label className="block text-sm font-semibold text-gray-800 mb-3">
-                Reason for borrowing (optional)
+                Reason for borrowing <span className="text-gray-500 font-normal">(optional)</span>
               </label>
               <textarea
                 value={borrowReason}
                 onChange={(e) => setBorrowReason(e.target.value)}
-                placeholder="Please describe why you want to borrow this book..."
+                placeholder="e.g., Research for assignment, Personal reading, Course requirement..."
                 rows={4}
                 className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 text-base leading-relaxed resize-none"
               />
-              <p className="mt-2 text-xs text-gray-600">This helps the librarian understand your academic or research needs.</p>
+              <p className="mt-2 text-xs text-gray-600">
+                💡 Providing a reason helps the librarian understand your academic or research needs and may expedite approval.
+              </p>
             </div>
 
+            {/* Info Box */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm text-yellow-800">
+                  <p className="font-medium mb-1">What happens next?</p>
+                  <ul className="text-xs space-y-1">
+                    <li>• Your request will be sent to the library admin</li>
+                    <li>• You'll receive a notification with the decision</li>
+                    <li>• If approved, you'll have 14 days to return the book</li>
+                    <li>• Late returns may incur fines</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
             <div className="flex space-x-3">
               <button
                 onClick={() => {
@@ -813,15 +867,28 @@ export default function BooksPage() {
                   setSelectedBook(null)
                 }}
                 className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-800 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                disabled={submitting}
               >
                 Cancel
               </button>
               <button
                 onClick={handleBorrowRequest}
                 disabled={submitting}
-                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
               >
-                {submitting ? 'Submitting...' : 'Submit Request'}
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Submit Request
+                  </>
+                )}
               </button>
             </div>
           </div>
