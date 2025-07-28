@@ -171,38 +171,38 @@
                     document.getElementById('profileStatus').textContent = 'Working';
                     document.getElementById('profileStatus').className = 'status ok';
                     
-                    resultDiv.innerHTML = \`
+                    resultDiv.innerHTML = `
                         <h4>✅ Profile API Working!</h4>
-                        <p><strong>Name:</strong> \${data.user.firstName} \${data.user.lastName}</p>
-                        <p><strong>Email:</strong> \${data.user.email}</p>
-                        <p><strong>Username:</strong> \${data.user.username}</p>
-                        <p><strong>Phone:</strong> \${data.user.phone || 'Not set'}</p>
-                        <p><strong>Address:</strong> \${data.user.address || 'Not set'}</p>
-                        <p><strong>Role:</strong> \${data.user.role}</p>
-                        <p><strong>Active:</strong> \${data.user.isActive}</p>
+                        <p><strong>Name:</strong> ${data.user.firstName} ${data.user.lastName}</p>
+                        <p><strong>Email:</strong> ${data.user.email}</p>
+                        <p><strong>Username:</strong> ${data.user.username}</p>
+                        <p><strong>Phone:</strong> ${data.user.phone || 'Not set'}</p>
+                        <p><strong>Address:</strong> ${data.user.address || 'Not set'}</p>
+                        <p><strong>Role:</strong> ${data.user.role}</p>
+                        <p><strong>Active:</strong> ${data.user.isActive}</p>
                         <details>
                             <summary>View Full Response</summary>
-                            <pre>\${JSON.stringify(data, null, 2)}</pre>
+                            <pre>${JSON.stringify(data, null, 2)}</pre>
                         </details>
-                    \`;
+                    `;
                 } else {
                     resultDiv.className = 'result error';
                     document.getElementById('profileStatus').textContent = 'Failed';
                     document.getElementById('profileStatus').className = 'status error';
                     
-                    resultDiv.innerHTML = \`
+                    resultDiv.innerHTML = `
                         <h4>❌ Profile API Failed:</h4>
-                        <p><strong>Status:</strong> \${response.status}</p>
-                        <p><strong>Error:</strong> \${data.error}</p>
-                        <p><strong>Token Used:</strong> \${authToken.substring(0, 20)}...</p>
-                    \`;
+                        <p><strong>Status:</strong> ${response.status}</p>
+                        <p><strong>Error:</strong> ${data.error}</p>
+                        <p><strong>Token Used:</strong> ${authToken.substring(0, 20)}...</p>
+                    `;
                 }
             } catch (error) {
                 console.error('Profile API error:', error);
                 const resultDiv = document.getElementById('profileResult');
                 resultDiv.style.display = 'block';
                 resultDiv.className = 'result error';
-                resultDiv.innerHTML = \`<h4>Network Error:</h4><p>\${error.message}</p>\`;
+                resultDiv.innerHTML = `<h4>Network Error:</h4><p>${error.message}</p>`;
             }
         }
 
@@ -226,10 +226,10 @@
 
             const resultDiv = document.getElementById('debugInfo');
             resultDiv.style.display = 'block';
-            resultDiv.innerHTML = \`
+            resultDiv.innerHTML = `
                 <h4>🔍 Debug Information</h4>
-                <pre>\${JSON.stringify(debugData, null, 2)}</pre>
-            \`;
+                <pre>${JSON.stringify(debugData, null, 2)}</pre>
+            `;
         }
 
         function clearAll() {

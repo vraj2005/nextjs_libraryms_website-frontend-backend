@@ -60,6 +60,7 @@ export default function Profile() {
   const [editedProfile, setEditedProfile] = useState<UserProfile | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [showPasswordSuccessMessage, setShowPasswordSuccessMessage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formErrors, setFormErrors] = useState<{[key: string]: string}>({});
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -389,7 +390,7 @@ export default function Profile() {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || localStorage.getItem('token')}`
         },
         body: JSON.stringify({
           currentPassword: passwordData.currentPassword,
@@ -409,21 +410,22 @@ export default function Profile() {
         });
         setPasswordErrors({});
         
-        // Show success message and logout after a short delay
-        alert('Password changed successfully! You will be redirected to login page.');
+        // Show password change success message
+        setShowPasswordSuccessMessage(true);
         
-        // Logout user and redirect to login
+        // Hide success message and logout after 3 seconds
         setTimeout(async () => {
+          setShowPasswordSuccessMessage(false);
           await logout();
           router.push('/login');
-        }, 1000);
+        }, 3000);
         
       } else {
         const error = await response.json();
-        if (error.message === 'Invalid current password') {
+        if (error.error === 'Invalid current password') {
           setPasswordErrors({currentPassword: 'Current password is incorrect'});
         } else {
-          setPasswordErrors({general: error.message || 'Failed to change password'});
+          setPasswordErrors({general: error.error || error.message || 'Failed to change password'});
         }
       }
       
@@ -728,6 +730,16 @@ export default function Profile() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                       </svg>
                       <span className="text-sm font-medium">Profile updated successfully!</span>
+                    </div>
+                  )}
+
+                  {/* Password Change Success Message */}
+                  {showPasswordSuccessMessage && (
+                    <div className="mb-6 bg-green-50 border border-green-200 text-green-800 px-4 py-3 rounded-xl flex items-center gap-2">
+                      <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      <span className="text-sm font-medium">Password changed successfully! Redirecting to login page...</span>
                     </div>
                   )}
                   

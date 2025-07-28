@@ -41,7 +41,7 @@ export default function LoginPage() {
 					// Set admin session for existing admin dashboard compatibility
 					localStorage.setItem("adminAuth", "true");
 					localStorage.setItem("adminUser", JSON.stringify({
-						username: result.user.name,
+						username: result.user.username ,
 						email: result.user.email,
 						role: "Administrator",
 						loginTime: new Date().toISOString()
@@ -177,7 +177,7 @@ export default function LoginPage() {
 								</div>
 							)}
 
-							{/* Admin Login Info */}
+							{/* Admin Login Info
 							<div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl">
 								<div className="flex items-start gap-2">
 									<svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -188,7 +188,7 @@ export default function LoginPage() {
 										<p className="text-xs font-medium">Use "admin" for both email and password to access admin dashboard</p>
 									</div>
 								</div>
-							</div>
+							</div> */}
 
 							{/* Remember Me & Forgot Password */}
 							<div className="flex items-center justify-between">
