@@ -5,38 +5,56 @@ import { useAuth } from '@/contexts/AuthContext'
 
 interface BorrowRequest {
   id: string
-  bookTitle: string
-  bookAuthor: string
+  bookId: string
+  userId: string
   requestDate: string
-  status: 'pending' | 'approved' | 'rejected'
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'RETURNED'
   approvedDate?: string
-  returnDate?: string
   dueDate?: string
+  returnDate?: string
+  reason?: string
+  book: {
+    id: string
+    title: string
+    author: string
+    isbn: string
+    category: {
+      id: string
+      name: string
+    }
+  }
+  user: {
+    id: string
+    firstName: string
+    lastName: string
+    email: string
+  }
 }
 
 const getStatusColor = (status: string) => {
   switch (status) {
-    case 'pending':
+    case 'PENDING':
       return 'bg-yellow-100 text-yellow-800 border-yellow-200'
-    case 'approved':
+    case 'APPROVED':
       return 'bg-green-100 text-green-800 border-green-200'
-    case 'rejected':
+    case 'REJECTED':
       return 'bg-red-100 text-red-800 border-red-200'
+    case 'RETURNED':
+      return 'bg-blue-100 text-blue-800 border-blue-200'
     default:
       return 'bg-gray-100 text-gray-800 border-gray-200'
   }
 }
 
 export default function BorrowedPage() {
-  const { user } = useAuth()
+  const { user, token, loading: authLoading } = useAuth()
   const [borrowRequests, setBorrowRequests] = useState<BorrowRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
-  const [filter, setFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all')
+  const [filter, setFilter] = useState<'all' | 'PENDING' | 'APPROVED' | 'REJECTED' | 'RETURNED'>('all')
 
   const fetchBorrowRequests = async () => {
     try {
-      const token = localStorage.getItem('token')
       if (!token) {
         setError('Please log in to view your borrow requests')
         return
@@ -49,6 +67,8 @@ export default function BorrowedPage() {
       })
 
       if (!response.ok) {
+        const errorData = await response.json()
+        console.error('API Error:', errorData)
         throw new Error('Failed to fetch borrow requests')
       }
 
@@ -63,20 +83,25 @@ export default function BorrowedPage() {
   }
 
   useEffect(() => {
-    if (user) {
+    if (authLoading) {
+      // Wait for auth to load
+      return
+    }
+    
+    if (user && token) {
       fetchBorrowRequests()
     } else {
       setLoading(false)
       setError('Please log in to view your borrow requests')
     }
-  }, [user])
+  }, [user, token, authLoading])
 
   const filteredRequests = borrowRequests.filter(request => {
     if (filter === 'all') return true
     return request.status === filter
   })
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -89,7 +114,7 @@ export default function BorrowedPage() {
     )
   }
 
-  if (!user) {
+  if (!authLoading && !user) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -121,9 +146,10 @@ export default function BorrowedPage() {
             <nav className="-mb-px flex space-x-8">
               {[
                 { key: 'all', label: 'All Requests', count: borrowRequests.length },
-                { key: 'pending', label: 'Pending', count: borrowRequests.filter(r => r.status === 'pending').length },
-                { key: 'approved', label: 'Approved', count: borrowRequests.filter(r => r.status === 'approved').length },
-                { key: 'rejected', label: 'Rejected', count: borrowRequests.filter(r => r.status === 'rejected').length },
+                { key: 'PENDING', label: 'Pending', count: borrowRequests.filter(r => r.status === 'PENDING').length },
+                { key: 'APPROVED', label: 'Approved', count: borrowRequests.filter(r => r.status === 'APPROVED').length },
+                { key: 'REJECTED', label: 'Rejected', count: borrowRequests.filter(r => r.status === 'REJECTED').length },
+                { key: 'RETURNED', label: 'Returned', count: borrowRequests.filter(r => r.status === 'RETURNED').length },
               ].map((tab) => (
                 <button
                   key={tab.key}
@@ -165,59 +191,150 @@ export default function BorrowedPage() {
               </svg>
             </div>
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No {filter !== 'all' ? filter : ''} requests found
+              No {filter !== 'all' ? filter.toLowerCase() : ''} requests found
             </h3>
-            <p className="text-gray-600">
+            <p className="text-gray-600 mb-6">
               {filter === 'all' 
                 ? "You haven't made any borrow requests yet."
-                : `You don't have any ${filter} requests.`
+                : `You don't have any ${filter.toLowerCase()} requests.`
               }
             </p>
+            <a
+              href="/books"
+              className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 transition-colors"
+            >
+              Browse Books
+            </a>
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-6">
             {filteredRequests.map((request) => (
-              <div key={request.id} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-1">
-                      {request.bookTitle}
-                    </h3>
-                    <p className="text-gray-600 mb-3">by {request.bookAuthor}</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
-                      <div>
-                        <span className="text-gray-500">Request Date:</span>
-                        <p className="font-medium">{new Date(request.requestDate).toLocaleDateString()}</p>
+              <div key={request.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div className="p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-xl font-bold text-gray-900">{request.book.title}</h3>
+                        <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(request.status)}`}>
+                          {request.status}
+                        </span>
                       </div>
                       
-                      {request.approvedDate && (
-                        <div>
-                          <span className="text-gray-500">Approved Date:</span>
-                          <p className="font-medium">{new Date(request.approvedDate).toLocaleDateString()}</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Book Details</label>
+                            <div className="mt-1">
+                              <p className="text-lg font-semibold text-gray-900">{request.book.title}</p>
+                              <p className="text-gray-600">by {request.book.author}</p>
+                              <p className="text-sm text-blue-600 font-medium">{request.book.category.name}</p>
+                              <p className="text-sm text-gray-500">ISBN: {request.book.isbn}</p>
+                            </div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <label className="text-sm font-medium text-gray-500">Request Information</label>
+                            <div className="mt-1 space-y-2">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm text-gray-600">Request Date:</span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {new Date(request.requestDate).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                  })}
+                                </span>
+                              </div>
+                              
+                              {(request.status === 'APPROVED' || request.status === 'RETURNED') && request.approvedDate && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600">Approved Date:</span>
+                                  <span className="text-sm font-medium text-green-700">
+                                    {new Date(request.approvedDate).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {(request.status === 'APPROVED' || request.status === 'RETURNED') && request.dueDate && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600">Due Date (Return by):</span>
+                                  <span className="text-sm font-medium text-orange-700">
+                                    {new Date(request.dueDate).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                              
+                              {request.status === 'RETURNED' && request.returnDate && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-sm text-gray-600">Actual Return Date:</span>
+                                  <span className="text-sm font-medium text-blue-700">
+                                    {new Date(request.returnDate).toLocaleDateString('en-US', {
+                                      year: 'numeric',
+                                      month: 'short',
+                                      day: 'numeric'
+                                    })}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {request.reason && (
+                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+                          <label className="text-sm font-medium text-gray-500">Request Reason</label>
+                          <p className="mt-1 text-sm text-gray-700">{request.reason}</p>
                         </div>
                       )}
                       
-                      {request.dueDate && (
-                        <div>
-                          <span className="text-gray-500">Due Date:</span>
-                          <p className="font-medium">{new Date(request.dueDate).toLocaleDateString()}</p>
+                      {/* Status Timeline */}
+                      <div className="mt-6">
+                        <label className="text-sm font-medium text-gray-500 mb-3 block">Request Timeline</label>
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center">
+                            <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                            <span className="ml-2 text-sm text-gray-600">Requested</span>
+                          </div>
+                          
+                          {request.status !== 'PENDING' && (
+                            <>
+                              <div className="flex-1 h-0.5 bg-gray-300"></div>
+                              <div className="flex items-center">
+                                <div className={`w-3 h-3 rounded-full ${
+                                  request.status === 'APPROVED' ? 'bg-green-500' : 
+                                  request.status === 'REJECTED' ? 'bg-red-500' : 'bg-gray-300'
+                                }`}></div>
+                                <span className="ml-2 text-sm text-gray-600">
+                                  {request.status === 'APPROVED' ? 'Approved' : 
+                                   request.status === 'REJECTED' ? 'Rejected' : 'Processed'}
+                                </span>
+                              </div>
+                            </>
+                          )}
+                          
+                          {request.status === 'RETURNED' && (
+                            <>
+                              <div className="flex-1 h-0.5 bg-gray-300"></div>
+                              <div className="flex items-center">
+                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                                <span className="ml-2 text-sm text-gray-600">Returned</span>
+                              </div>
+                            </>
+                          )}
                         </div>
-                      )}
-                      
-                      {request.returnDate && (
-                        <div>
-                          <span className="text-gray-500">Return Date:</span>
-                          <p className="font-medium">{new Date(request.returnDate).toLocaleDateString()}</p>
-                        </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div className="ml-4">
-                    <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(request.status)}`}>
-                      {request.status.charAt(0).toUpperCase() + request.status.slice(1)}
-                    </span>
                   </div>
                 </div>
               </div>
