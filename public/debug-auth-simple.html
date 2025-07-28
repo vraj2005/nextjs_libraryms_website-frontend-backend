@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Debug Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; background: #f5f5f5; }
+        .section { background: white; padding: 20px; border-radius: 8px; margin: 15px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        button { background: #007bff; color: white; padding: 12px 24px; border: none; border-radius: 5px; cursor: pointer; margin: 8px; font-weight: 600; }
+        button:hover { background: #0056b3; }
+        button.secondary { background: #6c757d; }
+        button.success { background: #28a745; }
+        button.danger { background: #dc3545; }
+        .result { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #007bff; }
+        .error { border-left-color: #dc3545; background: #f8d7da; }
+        .success { border-left-color: #28a745; background: #d4edda; }
+        input { padding: 10px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+        pre { background: #f1f3f4; padding: 10px; border-radius: 4px; overflow-x: auto; font-size: 12px; }
+        .status { display: inline-block; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: bold; }
+        .status.ok { background: #d4edda; color: #155724; }
+        .status.error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🔧 Authentication & Profile Debug Tool</h1>
+    <p>This tool helps debug login and profile access issues.</p>
+
+    <!-- Status Section -->
+    <div class="section">
+        <h3>📊 Current Status</h3>
+        <div id="statusInfo">
+            <p><strong>Auth Token:</strong> <span id="tokenStatus" class="status error">Not Found</span></p>
+            <p><strong>User Data:</strong> <span id="userStatus" class="status error">Not Found</span></p>
+            <p><strong>Profile API:</strong> <span id="profileStatus" class="status error">Not Tested</span></p>
+        </div>
+        <button onclick="checkStatus()">Refresh Status</button>
+        <button class="danger" onclick="clearAll()">Clear All Data</button>
+    </div>
+
+    <!-- Login Section -->
+    <div class="section">
+        <h3>🔐 Step 1: Login</h3>
+        <div style="margin: 10px 0;">
+            <input type="email" id="email" placeholder="Email" value="admin@library.com">
+            <input type="password" id="password" placeholder="Password" value="admin123">
+            <button onclick="login()">Login</button>
+        </div>
+        <div id="loginResult" class="result" style="display:none;"></div>
+    </div>
+
+    <!-- Profile API Test -->
+    <div class="section">
+        <h3>👤 Step 2: Test Profile API</h3>
+        <button onclick="testProfileAPI()">Test Profile API</button>
+        <button class="secondary" onclick="testProfilePage()">Go to Profile Page</button>
+        <div id="profileResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        // Check status on page load
+        window.onload = function() {
+            checkStatus();
+        };
+
+        function checkStatus() {
+            const authToken = localStorage.getItem('auth_token');
+            const token = localStorage.getItem('token');
+            const authUser = localStorage.getItem('auth_user');
+            const user = localStorage.getItem('user');
+
+            document.getElementById('tokenStatus').textContent = (authToken || token) ? 'Found' : 'Not Found';
+            document.getElementById('tokenStatus').className = (authToken || token) ? 'status ok' : 'status error';
+            
+            document.getElementById('userStatus').textContent = (authUser || user) ? 'Found' : 'Not Found';
+            document.getElementById('userStatus').className = (authUser || user) ? 'status ok' : 'status error';
+        }
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                console.log('Attempting login...', { email });
+                
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                console.log('Login response:', data);
+                
+                const resultDiv = document.getElementById('loginResult');
+                resultDiv.style.display = 'block';
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    
+                    // Store tokens in both formats for compatibility
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('auth_user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    resultDiv.innerHTML = 
+                        '<h4>✅ Login Successful!</h4>' +
+                        '<p><strong>Name:</strong> ' + data.user.firstName + ' ' + data.user.lastName + '</p>' +
+                        '<p><strong>Email:</strong> ' + data.user.email + '</p>' +
+                        '<p><strong>Role:</strong> ' + data.user.role + '</p>' +
+                        '<p><strong>User ID:</strong> ' + data.user.id + '</p>' +
+                        '<p><strong>Token Length:</strong> ' + data.token.length + ' characters</p>' +
+                        '<p class="success">✅ Token stored in localStorage</p>';
+                    
+                    checkStatus();
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = '<h4>❌ Login Failed:</h4><p>' + data.error + '</p>';
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                const resultDiv = document.getElementById('loginResult');
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '<h4>Network Error:</h4><p>' + error.message + '</p>';
+            }
+        }
+
+        async function testProfileAPI() {
+            const authToken = localStorage.getItem('auth_token') || localStorage.getItem('token');
+            
+            if (!authToken) {
+                const resultDiv = document.getElementById('profileResult');
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '<h4>❌ No authentication token found!</h4><p>Please login first.</p>';
+                return;
+            }
+            
+            try {
+                console.log('Testing profile API with token:', authToken.substring(0, 20) + '...');
+                
+                const response = await fetch('/api/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer ' + authToken,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                console.log('Profile API response:', data);
+                
+                const resultDiv = document.getElementById('profileResult');
+                resultDiv.style.display = 'block';
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    document.getElementById('profileStatus').textContent = 'Working';
+                    document.getElementById('profileStatus').className = 'status ok';
+                    
+                    resultDiv.innerHTML = 
+                        '<h4>✅ Profile API Working!</h4>' +
+                        '<p><strong>Name:</strong> ' + data.user.firstName + ' ' + data.user.lastName + '</p>' +
+                        '<p><strong>Email:</strong> ' + data.user.email + '</p>' +
+                        '<p><strong>Username:</strong> ' + data.user.username + '</p>' +
+                        '<p><strong>Phone:</strong> ' + (data.user.phone || 'Not set') + '</p>' +
+                        '<p><strong>Address:</strong> ' + (data.user.address || 'Not set') + '</p>' +
+                        '<p><strong>Role:</strong> ' + data.user.role + '</p>' +
+                        '<p><strong>Active:</strong> ' + data.user.isActive + '</p>' +
+                        '<p class="success">✅ Profile page should work now!</p>';
+                } else {
+                    resultDiv.className = 'result error';
+                    document.getElementById('profileStatus').textContent = 'Failed';
+                    document.getElementById('profileStatus').className = 'status error';
+                    
+                    resultDiv.innerHTML = 
+                        '<h4>❌ Profile API Failed:</h4>' +
+                        '<p><strong>Status:</strong> ' + response.status + '</p>' +
+                        '<p><strong>Error:</strong> ' + data.error + '</p>' +
+                        '<p><strong>Token Used:</strong> ' + authToken.substring(0, 20) + '...</p>';
+                }
+            } catch (error) {
+                console.error('Profile API error:', error);
+                const resultDiv = document.getElementById('profileResult');
+                resultDiv.style.display = 'block';
+                resultDiv.className = 'result error';
+                resultDiv.innerHTML = '<h4>Network Error:</h4><p>' + error.message + '</p>';
+            }
+        }
+
+        function testProfilePage() {
+            console.log('Navigating to profile page...');
+            window.location.href = '/profile';
+        }
+
+        function clearAll() {
+            localStorage.removeItem('auth_token');
+            localStorage.removeItem('token');
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('user');
+            
+            alert('All authentication data cleared!');
+            checkStatus();
+            
+            // Clear all result divs
+            document.getElementById('loginResult').style.display = 'none';
+            document.getElementById('profileResult').style.display = 'none';
+        }
+    </script>
+</body>
+</html>

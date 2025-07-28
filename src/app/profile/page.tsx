@@ -7,17 +7,20 @@ import { useRouter } from 'next/navigation';
 
 interface UserProfile {
   id: string;
-  name: string;
   email: string;
-  phoneNumber?: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
   address?: string;
-  membershipId?: string;
   role: string;
+  profileImage?: string;
   isActive: boolean;
-  joinDate: string;
   createdAt: string;
   updatedAt: string;
-  profileImage?: string;
+  // Display fields
+  name: string;
+  joinDate: string;
   // Additional profile fields for UI
   membershipType?: 'Basic' | 'Premium' | 'VIP';
   booksRead?: number;
@@ -50,7 +53,7 @@ const recentActivity = [
 ];
 
 export default function Profile() {
-  const { user, loading: authLoading, logout } = useAuth();
+  const { user, loading: authLoading, logout, updateUser } = useAuth();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState<'overview' | 'settings' | 'activity' | 'preferences'>('overview');
   const [isEditing, setIsEditing] = useState(false);
@@ -73,51 +76,141 @@ export default function Profile() {
 
   // Check authentication and load user data
   useEffect(() => {
-    if (!authLoading) {
-      if (!user) {
-        router.push('/login');
-        return;
+    const fetchUserProfile = async () => {
+      try {
+        setLoading(true);
+        
+        // Get token from localStorage - check both possible keys
+        const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+        
+        console.log('Profile page: Checking authentication...');
+        console.log('Token found:', token ? 'Yes' : 'No');
+        
+        if (!token) {
+          console.log('No token found, redirecting to login');
+          router.push('/login');
+          return;
+        }
+
+        // Fetch user profile from API
+        console.log('Fetching profile from API...');
+        const response = await fetch('/api/profile', {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        console.log('Profile API response status:', response.status);
+
+        if (!response.ok) {
+          if (response.status === 401) {
+            console.log('Token invalid, logging out...');
+            logout();
+            router.push('/login');
+            return;
+          }
+          throw new Error('Failed to fetch profile');
+        }
+
+        const data = await response.json();
+        console.log('Profile data received:', data);
+        
+        // Transform API response to match UserProfile interface
+        const profile: UserProfile = {
+          id: data.user.id,
+          email: data.user.email,
+          username: data.user.username,
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          name: `${data.user.firstName} ${data.user.lastName}`,
+          phone: data.user.phone || '',
+          address: data.user.address || '',
+          role: data.user.role,
+          isActive: data.user.isActive,
+          joinDate: data.user.createdAt,
+          createdAt: data.user.createdAt,
+          updatedAt: data.user.updatedAt,
+          profileImage: data.user.profileImage,
+          // Stats from API
+          membershipType: data.user.role === 'ADMIN' ? 'VIP' : data.user.role === 'LIBRARIAN' ? 'Premium' : 'Basic',
+          booksRead: data.stats.totalBorrowRequests || 0,
+          currentlyBorrowed: data.recentBorrowRequests?.filter((req: any) => req.status === 'APPROVED' && !req.returnDate).length || 0,
+          totalBorrowed: data.stats.totalBorrowRequests || 0,
+          finesOwed: data.stats.unpaidFines || 0,
+          favoriteGenres: ["Fiction", "Science", "History"] // Default for now
+        };
+        
+        console.log('Profile state set successfully');
+        setUserProfile(profile);
+        setEditedProfile(profile);
+        
+      } catch (error) {
+        console.error('Error fetching profile:', error);
+        
+        // Only redirect to login if we're sure authentication failed
+        // Otherwise, try to use fallback data
+        if (!user) {
+          console.log('No user context and API failed, redirecting to login');
+          router.push('/login');
+          return;
+        }
+        
+        // Use fallback data if API fails but user context exists
+        const fallbackProfile: UserProfile = {
+          id: user.id,
+          email: user.email,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          name: `${user.firstName} ${user.lastName}`,
+          phone: user.phoneNumber || '',
+          address: user.address || '',
+          role: user.role,
+          isActive: user.isActive,
+          joinDate: user.createdAt,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          profileImage: user.profileImage,
+          membershipType: 'Basic',
+          booksRead: 0,
+          currentlyBorrowed: 0,
+          totalBorrowed: 0,
+          finesOwed: 0,
+          favoriteGenres: ["Fiction", "Science", "History"]
+        };
+        
+        setUserProfile(fallbackProfile);
+        setEditedProfile(fallbackProfile);
+      } finally {
+        setLoading(false);
       }
-      
-      // Initialize user profile with auth data and defaults
-      const profile: UserProfile = {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phoneNumber: user.phoneNumber || '',
-        address: user.address || '',
-        membershipId: user.membershipId,
-        role: user.role,
-        isActive: user.isActive,
-        joinDate: user.joinDate,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-        profileImage: user.profileImage,
-        // Default values for additional fields
-        membershipType: 'Premium', // You could determine this based on user data
-        booksRead: 47,
-        currentlyBorrowed: 3,
-        totalBorrowed: 152,
-        finesOwed: 0,
-        favoriteGenres: ["Fiction", "History", "Science", "Biography"]
-      };
-      
-      setUserProfile(profile);
-      setEditedProfile(profile);
-      setLoading(false);
+    };
+
+    // Only run if not in auth loading state
+    if (!authLoading) {
+      fetchUserProfile();
     }
-  }, [user, authLoading, router]);
+  }, [authLoading, router, logout, user]);
 
   const validateForm = () => {
     if (!editedProfile) return false;
     
     const errors: {[key: string]: string} = {};
     
-    // Name validation
-    if (!editedProfile.name?.trim()) {
-      errors.name = 'Name is required';
-    } else if (editedProfile.name.trim().length < 2) {
-      errors.name = 'Name must be at least 2 characters long';
+    // First Name validation
+    if (!editedProfile.firstName?.trim()) {
+      errors.firstName = 'First name is required';
+    } else if (editedProfile.firstName.trim().length < 2) {
+      errors.firstName = 'First name must be at least 2 characters long';
+    }
+    
+    // Last Name validation
+    if (!editedProfile.lastName?.trim()) {
+      errors.lastName = 'Last name is required';
+    } else if (editedProfile.lastName.trim().length < 2) {
+      errors.lastName = 'Last name must be at least 2 characters long';
     }
     
     // Email validation
@@ -128,13 +221,13 @@ export default function Profile() {
     }
     
     // Phone number validation
-    if (!editedProfile.phoneNumber?.trim()) {
-      errors.phoneNumber = 'Phone number is required';
+    if (!editedProfile.phone?.trim()) {
+      errors.phone = 'Phone number is required';
     } else {
       const phoneRegex = /^[0-9]{10}$/;
-      const cleanPhone = editedProfile.phoneNumber.replace(/\D/g, ''); // Remove non-digits
+      const cleanPhone = editedProfile.phone.replace(/\D/g, ''); // Remove non-digits
       if (!phoneRegex.test(cleanPhone)) {
-        errors.phoneNumber = 'Phone number must be exactly 10 digits';
+        errors.phone = 'Phone number must be exactly 10 digits';
       }
     }
     
@@ -158,24 +251,47 @@ export default function Profile() {
     
     try {
       // API call to update profile
-      const response = await fetch('/api/profile/update', {
+      const response = await fetch('/api/profile', {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          'Authorization': `Bearer ${localStorage.getItem('auth_token') || localStorage.getItem('token')}`
         },
         body: JSON.stringify({
-          name: editedProfile.name,
+          firstName: editedProfile.firstName,
+          lastName: editedProfile.lastName,
           email: editedProfile.email,
-          phoneNumber: editedProfile.phoneNumber,
+          phone: editedProfile.phone,
           address: editedProfile.address
         })
       });
       
       if (response.ok) {
         const updatedUser = await response.json();
-        // Update local state
-        setUserProfile(prev => prev ? {...prev, ...updatedUser} : null);
+        
+        // Update both userProfile and editedProfile with the new data
+        const updatedProfile: UserProfile = {
+          ...userProfile,
+          firstName: editedProfile.firstName,
+          lastName: editedProfile.lastName,
+          email: editedProfile.email,
+          phone: editedProfile.phone,
+          address: editedProfile.address,
+          name: `${editedProfile.firstName} ${editedProfile.lastName}`,
+          updatedAt: new Date().toISOString()
+        };
+        
+        setUserProfile(updatedProfile);
+        setEditedProfile(updatedProfile);
+        
+        // Update the AuthContext so navbar reflects changes
+        updateUser({
+          firstName: editedProfile.firstName,
+          lastName: editedProfile.lastName,
+          email: editedProfile.email,
+          phoneNumber: editedProfile.phone,
+          address: editedProfile.address
+        });
         
         setIsEditing(false);
         setShowSuccessMessage(true);
@@ -186,13 +302,37 @@ export default function Profile() {
       } else {
         const error = await response.json();
         console.error('Error saving profile:', error);
-        // You could show an error message here
+        // Show error message to user
+        setFormErrors({general: error.message || 'Failed to update profile'});
       }
       
     } catch (error) {
       console.error('Error saving profile:', error);
-      // For demo purposes, still update local state
-      setUserProfile(prev => prev ? {...prev, ...editedProfile} : null);
+      
+      // For demo purposes, still update local state if API fails
+      const updatedProfile: UserProfile = {
+        ...userProfile,
+        firstName: editedProfile.firstName,
+        lastName: editedProfile.lastName,
+        email: editedProfile.email,
+        phone: editedProfile.phone,
+        address: editedProfile.address,
+        name: `${editedProfile.firstName} ${editedProfile.lastName}`,
+        updatedAt: new Date().toISOString()
+      };
+      
+      setUserProfile(updatedProfile);
+      setEditedProfile(updatedProfile);
+      
+      // Update the AuthContext so navbar reflects changes
+      updateUser({
+        firstName: editedProfile.firstName,
+        lastName: editedProfile.lastName,
+        email: editedProfile.email,
+        phoneNumber: editedProfile.phone,
+        address: editedProfile.address
+      });
+      
       setIsEditing(false);
       setShowSuccessMessage(true);
       setTimeout(() => setShowSuccessMessage(false), 3000);
@@ -433,7 +573,7 @@ export default function Profile() {
                 <div className="text-center md:text-left text-white">
                   <h2 className="text-3xl md:text-4xl font-bold mb-2">{userProfile.name}</h2>
                   <p className="text-sky-100 mb-2">Member since {formatMonthYear(userProfile.joinDate)}</p>
-                  <p className="text-sky-100">Member ID: {userProfile.membershipId || userProfile.id}</p>
+                  <p className="text-sky-100">{userProfile.email}</p>
                 </div>
                 <div className="ml-auto">
                   <button
@@ -591,29 +731,107 @@ export default function Profile() {
                     </div>
                   )}
                   
+                  {/* Error Message */}
+                  {formErrors.general && (
+                    <div className="mb-6 bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-xl flex items-center gap-2">
+                      <svg className="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.124 16.5c-.77.833.192 2.5 1.732 2.5z" />
+                      </svg>
+                      <span className="text-sm font-medium">{formErrors.general}</span>
+                    </div>
+                  )}
+                  
                   <div className="space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">Full Name</label>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">First Name</label>
                         <input
                           type="text"
-                          value={isEditing && editedProfile ? editedProfile.name : userProfile.name}
+                          value={isEditing && editedProfile ? editedProfile.firstName : userProfile.firstName}
                           onChange={(e) => {
                             if (editedProfile) {
-                              setEditedProfile({...editedProfile, name: e.target.value});
-                              if (formErrors.name) {
-                                setFormErrors({...formErrors, name: ''});
+                              setEditedProfile({...editedProfile, firstName: e.target.value});
+                              if (formErrors.firstName) {
+                                setFormErrors({...formErrors, firstName: ''});
                               }
                             }
                           }}
                           disabled={!isEditing}
-                          placeholder="Enter your full name"
+                          placeholder="Enter your first name"
                           className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
-                            formErrors.name ? 'border-red-500' : 'border-gray-300'
+                            formErrors.firstName ? 'border-red-500' : 'border-gray-300'
                           }`}
                         />
-                        {formErrors.name && (
-                          <p className="mt-1 text-sm text-red-600">{formErrors.name}</p>
+                        {formErrors.firstName && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.firstName}</p>
+                        )}
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">Last Name</label>
+                        <input
+                          type="text"
+                          value={isEditing && editedProfile ? editedProfile.lastName : userProfile.lastName}
+                          onChange={(e) => {
+                            if (editedProfile) {
+                              setEditedProfile({...editedProfile, lastName: e.target.value});
+                              if (formErrors.lastName) {
+                                setFormErrors({...formErrors, lastName: ''});
+                              }
+                            }
+                          }}
+                          disabled={!isEditing}
+                          placeholder="Enter your last name"
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
+                            formErrors.lastName ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {formErrors.lastName && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.lastName}</p>
+                        )}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">Username</label>
+                        <input
+                          type="text"
+                          value={userProfile.username}
+                          disabled={true}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-500"
+                        />
+                        <p className="mt-1 text-xs text-gray-500">Username cannot be changed</p>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-800 mb-2">Phone</label>
+                        <input
+                          type="tel"
+                          value={isEditing ? (editedProfile?.phone || '') : (userProfile.phone || '')}
+                          onChange={(e) => {
+                            if (editedProfile) {
+                              // Only allow digits and limit to 10 characters
+                              const value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                              setEditedProfile({...editedProfile, phone: value});
+                              if (formErrors.phone) {
+                                setFormErrors({...formErrors, phone: ''});
+                              }
+                            }
+                          }}
+                          disabled={!isEditing}
+                          placeholder="Enter 10-digit phone number"
+                          maxLength={10}
+                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
+                            formErrors.phone ? 'border-red-500' : 'border-gray-300'
+                          }`}
+                        />
+                        {formErrors.phone && (
+                          <p className="mt-1 text-sm text-red-600">{formErrors.phone}</p>
+                        )}
+                        {isEditing && !formErrors.phone && editedProfile?.phone && (
+                          <p className="mt-1 text-xs text-gray-500">
+                            {editedProfile.phone.length}/10 digits
+                          </p>
                         )}
                       </div>
                       <div>
@@ -630,7 +848,7 @@ export default function Profile() {
                             }
                           }}
                           disabled={!isEditing}
-                          placeholder="Enter your email address"
+                          placeholder="Enter your email"
                           className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
                             formErrors.email ? 'border-red-500' : 'border-gray-300'
                           }`}
@@ -638,48 +856,7 @@ export default function Profile() {
                         {formErrors.email && (
                           <p className="mt-1 text-sm text-red-600">{formErrors.email}</p>
                         )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">Phone</label>
-                        <input
-                          type="tel"
-                          value={isEditing ? (editedProfile?.phoneNumber || '') : (userProfile.phoneNumber || '')}
-                          onChange={(e) => {
-                            if (editedProfile) {
-                              // Only allow digits and limit to 10 characters
-                              const value = e.target.value.replace(/\D/g, '').slice(0, 10);
-                              setEditedProfile({...editedProfile, phoneNumber: value});
-                              if (formErrors.phoneNumber) {
-                                setFormErrors({...formErrors, phoneNumber: ''});
-                              }
-                            }
-                          }}
-                          disabled={!isEditing}
-                          placeholder="Enter 10-digit phone number"
-                          maxLength={10}
-                          className={`w-full px-4 py-3 border rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent disabled:bg-gray-100 text-gray-900 ${
-                            formErrors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                          }`}
-                        />
-                        {formErrors.phoneNumber && (
-                          <p className="mt-1 text-sm text-red-600">{formErrors.phoneNumber}</p>
-                        )}
-                        {isEditing && !formErrors.phoneNumber && editedProfile?.phoneNumber && (
-                          <p className="mt-1 text-xs text-gray-500">
-                            {editedProfile.phoneNumber.length}/10 digits
-                          </p>
-                        )}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-800 mb-2">Member ID</label>
-                        <input
-                          type="text"
-                          value={userProfile.membershipId || userProfile.id}
-                          disabled
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-100 text-gray-500 cursor-not-allowed"
-                          title="Member ID cannot be changed"
-                        />
-                        <p className="mt-1 text-xs text-gray-500">Your unique member identification number</p>
+                        <p className="mt-1 text-xs text-gray-500">Your email address for communication</p>
                       </div>
                     </div>
                     

@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserFromToken, getTokenFromRequest } from '@/lib/auth'
+import { getUserFromToken } from '@/lib/auth'
 
 export async function GET(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request)
-    if (!token) {
+    // Get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Unauthorized. Token required.' },
         { status: 401 }
       )
     }
 
+    const token = authHeader.substring(7)
     const user = await getUserFromToken(token)
+    
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid token' },
@@ -27,7 +30,7 @@ export async function GET(request: NextRequest) {
 
     // Build where clause
     const where: any = {
-      userId: user.id
+      userId: user.userId
     }
 
     if (unreadOnly) {
@@ -51,7 +54,7 @@ export async function GET(request: NextRequest) {
     // Get unread count
     const unreadCount = await prisma.notification.count({
       where: {
-        userId: user.id,
+        userId: user.userId,
         isRead: false
       }
     })
@@ -63,15 +66,14 @@ export async function GET(request: NextRequest) {
         currentPage: page,
         totalPages,
         totalNotifications,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
+        limit
       }
     })
 
   } catch (error) {
-    console.error('Error fetching notifications:', error)
+    console.error('Notifications fetch error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch notifications' },
       { status: 500 }
     )
   }
@@ -79,15 +81,18 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const token = getTokenFromRequest(request)
-    if (!token) {
+    // Get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Unauthorized. Token required.' },
         { status: 401 }
       )
     }
 
+    const token = authHeader.substring(7)
     const user = await getUserFromToken(token)
+    
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid token' },
@@ -95,34 +100,49 @@ export async function PATCH(request: NextRequest) {
       )
     }
 
-    const { notificationIds, markAsRead } = await request.json()
+    const { action, notificationIds } = await request.json()
 
-    if (!Array.isArray(notificationIds)) {
-      return NextResponse.json(
-        { error: 'notificationIds must be an array' },
-        { status: 400 }
-      )
+    if (action === 'markAllAsRead') {
+      await prisma.notification.updateMany({
+        where: {
+          userId: user.userId,
+          isRead: false
+        },
+        data: {
+          isRead: true
+        }
+      })
+
+      return NextResponse.json({
+        message: 'All notifications marked as read'
+      })
     }
 
-    // Update notifications
-    await prisma.notification.updateMany({
-      where: {
-        id: { in: notificationIds },
-        userId: user.id
-      },
-      data: {
-        isRead: markAsRead !== false
-      }
-    })
+    if (action === 'markAsRead' && notificationIds && Array.isArray(notificationIds)) {
+      await prisma.notification.updateMany({
+        where: {
+          id: { in: notificationIds },
+          userId: user.userId
+        },
+        data: {
+          isRead: true
+        }
+      })
 
-    return NextResponse.json({
-      message: 'Notifications updated successfully'
-    })
+      return NextResponse.json({
+        message: 'Notifications marked as read'
+      })
+    }
+
+    return NextResponse.json(
+      { error: 'Invalid action or missing notificationIds' },
+      { status: 400 }
+    )
 
   } catch (error) {
-    console.error('Error updating notifications:', error)
+    console.error('Notifications update error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to update notifications' },
       { status: 500 }
     )
   }

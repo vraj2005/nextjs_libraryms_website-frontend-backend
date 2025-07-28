@@ -43,13 +43,8 @@ export default function Navigation() {
   };
 
   // Get user's initials for avatar
-  const getUserInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map(word => word.charAt(0))
-      .join('')
-      .toUpperCase()
-      .slice(0, 2);
+  const getUserInitials = (firstName: string, lastName: string) => {
+    return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
   };
 
   return (
@@ -196,10 +191,10 @@ export default function Navigation() {
               {user ? (
                 <>
                   <span className="w-6 h-6 md:w-8 md:h-8 rounded-full bg-gradient-to-br from-sky-200 via-sky-100 to-amber-100 flex items-center justify-center text-sky-700 font-bold border border-sky-200 shadow-inner text-xs md:text-sm transition-all duration-200">
-                    {getUserInitials(user.name)}
+                    {getUserInitials(user.firstName, user.lastName)}
                   </span>
                   <span className="hidden md:inline transition-all duration-200 max-w-24 truncate">
-                    {user.name.split(' ')[0]}
+                    {user.firstName}
                   </span>
                 </>
               ) : (
@@ -234,10 +229,10 @@ export default function Navigation() {
                   <div className="px-4 md:px-6 py-3 border-b border-sky-100 bg-gradient-to-r from-sky-50 to-indigo-50">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full bg-gradient-to-br from-sky-200 via-sky-100 to-amber-100 flex items-center justify-center text-sky-700 font-bold border border-sky-200 shadow-inner">
-                        {getUserInitials(user.name)}
+                        {getUserInitials(user.firstName, user.lastName)}
                       </div>
                       <div>
-                        <p className="font-semibold text-gray-800 text-sm truncate max-w-32">{user.name}</p>
+                        <p className="font-semibold text-gray-800 text-sm truncate max-w-32">{user.firstName} {user.lastName}</p>
                         <p className="text-xs text-gray-600 truncate max-w-32">{user.email}</p>
                       </div>
                     </div>

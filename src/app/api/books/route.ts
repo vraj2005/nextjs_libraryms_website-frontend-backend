@@ -1,13 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { getUserFromToken } from '@/lib/auth';
+import { getUserFromToken } from '@/lib/auth'
+
+// Generate unique ISBN-13
+function generateISBN13(): string {
+  const prefix = '978'
+  const random = Math.floor(Math.random() * 1000000000).toString().padStart(9, '0')
+  let isbn = prefix + random
+  
+  // Calculate check digit
+  let sum = 0
+  for (let i = 0; i < 12; i++) {
+    sum += parseInt(isbn[i]) * (i % 2 === 0 ? 1 : 3)
+  }
+  const checkDigit = (10 - (sum % 10)) % 10
+  
+  return isbn + checkDigit
+}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const search = searchParams.get('search')
-    const status = searchParams.get('status')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '12')
     const sortBy = searchParams.get('sortBy') || 'title'
@@ -19,24 +34,15 @@ export async function GET(request: NextRequest) {
     }
 
     if (category && category !== 'all') {
-      where.category = category
+      where.categoryId = category
     }
 
     if (search) {
       where.OR = [
         { title: { contains: search, mode: 'insensitive' } },
         { author: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
-        { subjects: { hasSome: [search] } }
+        { description: { contains: search, mode: 'insensitive' } }
       ]
-    }
-
-    if (status && status !== 'all') {
-      if (status === 'Available') {
-        where.availableCopies = { gt: 0 }
-      } else if (status === 'Checked Out') {
-        where.availableCopies = 0
-      }
     }
 
     // Build orderBy clause
@@ -47,59 +53,31 @@ export async function GET(request: NextRequest) {
     const totalBooks = await prisma.book.count({ where })
     const totalPages = Math.ceil(totalBooks / limit)
 
-    // Get books with pagination
+    // Get books with pagination and include category
     const books = await prisma.book.findMany({
       where,
       orderBy,
       skip: (page - 1) * limit,
-      take: limit
+      take: limit,
+      include: {
+        category: true
+      }
     })
 
-    // Transform books to match frontend format
-    const transformedBooks = books.map((book: any) => ({
-      id: book.id,
-      title: book.title,
-      author: book.author,
-      category: book.category,
-      image: book.image,
-      rating: book.rating,
-      status: book.availableCopies > 0 ? 'Available' : 
-              book.reservedCopies > 0 ? 'Reserved' : 'Checked Out',
-      description: book.description,
-      publishYear: book.publishYear,
-      isbn: book.isbn,
-      pages: book.pages,
-      language: book.language,
-      publisher: book.publisher,
-      edition: book.edition,
-      subjects: book.subjects,
-      availability: {
-        total: book.totalCopies,
-        available: book.availableCopies,
-        borrowed: book.borrowedCopies,
-        reserved: book.reservedCopies
-      },
-      location: book.location,
-      callNumber: book.callNumber,
-      format: book.format,
-      price: book.price
-    }))
-
     return NextResponse.json({
-      books: transformedBooks,
+      books,
       pagination: {
         currentPage: page,
         totalPages,
         totalBooks,
-        hasNextPage: page < totalPages,
-        hasPrevPage: page > 1
+        limit
       }
     })
 
   } catch (error) {
-    console.error('Error fetching books:', error)
+    console.error('Books fetch error:', error)
     return NextResponse.json(
-      { error: 'Internal server error' },
+      { error: 'Failed to fetch books', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
     )
   }
@@ -107,50 +85,102 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    const user = token ? await getUserFromToken(token) : null;
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get token from Authorization header
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Token required.' },
+        { status: 401 }
+      )
     }
-    const data = await request.json();
-    const book = await prisma.book.create({ data });
-    return NextResponse.json({ book });
-  } catch (error) {
-    console.error('Error creating book:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
 
-export async function PUT(request: NextRequest) {
-  try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    const user = token ? await getUserFromToken(token) : null;
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const token = authHeader.substring(7)
+    const user = await getUserFromToken(token)
+    
+    if (!user || (user.role !== 'ADMIN' && user.role !== 'LIBRARIAN')) {
+      return NextResponse.json(
+        { error: 'Unauthorized. Admin access required.' },
+        { status: 403 }
+      )
     }
-    const data = await request.json();
-    if (!data.id) return NextResponse.json({ error: 'Book ID required' }, { status: 400 });
-    const book = await prisma.book.update({ where: { id: data.id }, data });
-    return NextResponse.json({ book });
-  } catch (error) {
-    console.error('Error updating book:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
 
-export async function DELETE(request: NextRequest) {
-  try {
-    const token = request.headers.get('authorization')?.replace('Bearer ', '');
-    const user = token ? await getUserFromToken(token) : null;
-    if (!user || user.role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    const { 
+      title, 
+      author, 
+      description, 
+      categoryId, 
+      image, 
+      totalCopies, 
+      publishedYear, 
+      publisher 
+    } = await request.json()
+
+    if (!title || !author || !categoryId) {
+      return NextResponse.json(
+        { error: 'Title, author, and category are required' },
+        { status: 400 }
+      )
     }
-    const { id } = await request.json();
-    if (!id) return NextResponse.json({ error: 'Book ID required' }, { status: 400 });
-    await prisma.book.delete({ where: { id } });
-    return NextResponse.json({ success: true });
+
+    // Check if category exists
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId }
+    })
+
+    if (!category) {
+      return NextResponse.json(
+        { error: 'Category not found' },
+        { status: 404 }
+      )
+    }
+
+    // Generate unique ISBN
+    let isbn = generateISBN13()
+    let existingBook = await prisma.book.findUnique({ where: { isbn } })
+    
+    while (existingBook) {
+      isbn = generateISBN13()
+      existingBook = await prisma.book.findUnique({ where: { isbn } })
+    }
+
+    const book = await prisma.book.create({
+      data: {
+        isbn,
+        title,
+        author,
+        description,
+        categoryId,
+        image,
+        totalCopies: totalCopies || 1,
+        availableCopies: totalCopies || 1,
+        publishedYear,
+        publisher
+      },
+      include: {
+        category: true
+      }
+    })
+
+    // Create book history
+    await prisma.bookHistory.create({
+      data: {
+        bookId: book.id,
+        action: 'CREATED',
+        userId: user.id,
+        newData: JSON.stringify(book)
+      }
+    })
+
+    return NextResponse.json({
+      message: 'Book created successfully',
+      book
+    }, { status: 201 })
+
   } catch (error) {
-    console.error('Error deleting book:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Book creation error:', error)
+    return NextResponse.json(
+      { error: 'Failed to create book', details: error instanceof Error ? error.message : 'Unknown error' },
+      { status: 500 }
+    )
   }
 }

@@ -5,14 +5,16 @@ import React, { createContext, useContext, useEffect, useState } from 'react'
 interface User {
   id: string
   email: string
-  name: string
+  username: string
+  firstName: string
+  lastName: string
   role: string
   membershipId?: string
   phoneNumber?: string
   address?: string
   profileImage?: string
   isActive: boolean
-  joinDate: string
+  joinDate?: string
   createdAt: string
   updatedAt: string
 }
@@ -23,13 +25,16 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string; user?: User }>
   register: (userData: RegisterData) => Promise<{ success: boolean; error?: string }>
   logout: () => void
+  updateUser: (updatedUser: Partial<User>) => void
   loading: boolean
 }
 
 interface RegisterData {
   email: string
   password: string
-  name: string
+  firstName: string
+  lastName: string
+  username: string
   phoneNumber?: string
   address?: string
 }
@@ -113,12 +118,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('auth_user')
   }
 
+  const updateUser = (updatedUser: Partial<User>) => {
+    if (user) {
+      const newUser = { ...user, ...updatedUser }
+      setUser(newUser)
+      localStorage.setItem('auth_user', JSON.stringify(newUser))
+    }
+  }
+
   const value = {
     user,
     token,
     login,
     register,
     logout,
+    updateUser,
     loading
   }
 

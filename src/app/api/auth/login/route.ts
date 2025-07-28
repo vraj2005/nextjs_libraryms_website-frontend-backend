@@ -6,6 +6,8 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json()
 
+    console.log('🔐 Login attempt for:', email)
+
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -18,6 +20,8 @@ export async function POST(request: NextRequest) {
       where: { email }
     })
 
+    console.log('👤 User found:', user ? 'Yes' : 'No')
+
     if (!user) {
       return NextResponse.json(
         { error: 'Invalid credentials' },
@@ -26,7 +30,10 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify password
+    console.log('🔍 Verifying password...')
     const isValidPassword = await verifyPassword(password, user.password)
+    console.log('✅ Password valid:', isValidPassword)
+    
     if (!isValidPassword) {
       return NextResponse.json(
         { error: 'Invalid credentials' },

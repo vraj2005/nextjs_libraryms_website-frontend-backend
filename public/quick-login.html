@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Login Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; }
+        .container { background: #f5f5f5; padding: 20px; border-radius: 8px; margin: 10px 0; }
+        button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .result { background: white; padding: 15px; border-radius: 5px; margin: 10px 0; border-left: 4px solid #007bff; }
+        .error { border-left-color: #dc3545; }
+        .success { border-left-color: #28a745; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; width: 200px; }
+    </style>
+</head>
+<body>
+    <h1>🔐 Quick Login & Profile Test</h1>
+
+    <div class="container">
+        <h3>1. Login</h3>
+        <input type="email" id="email" placeholder="Email" value="admin@library.com">
+        <input type="password" id="password" placeholder="Password" value="admin123">
+        <button onclick="login()">Login</button>
+        <div id="loginResult" class="result" style="display:none;"></div>
+    </div>
+
+    <div class="container">
+        <h3>2. Test Profile Access</h3>
+        <button onclick="testProfile()">Access Profile Page</button>
+        <button onclick="goToProfile()">Go to Profile Page</button>
+        <div id="profileResult" class="result" style="display:none;"></div>
+    </div>
+
+    <script>
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await response.json();
+                
+                const resultDiv = document.getElementById('loginResult');
+                resultDiv.style.display = 'block';
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    
+                    // Store in both formats for compatibility
+                    localStorage.setItem('auth_token', data.token);
+                    localStorage.setItem('auth_user', JSON.stringify(data.user));
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    
+                    resultDiv.innerHTML = `
+                        <h4>✅ Login Successful!</h4>
+                        <p><strong>User:</strong> ${data.user.firstName} ${data.user.lastName}</p>
+                        <p><strong>Role:</strong> ${data.user.role}</p>
+                        <p><strong>Token stored in localStorage</strong></p>
+                        <p><strong>You can now access the profile page!</strong></p>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h4>❌ Login Failed:</h4><p>${data.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('loginResult').innerHTML = `<h4>Network Error:</h4><p>${error.message}</p>`;
+            }
+        }
+
+        async function testProfile() {
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+            
+            if (!token) {
+                document.getElementById('profileResult').innerHTML = '<h4>❌ Please login first!</h4>';
+                document.getElementById('profileResult').style.display = 'block';
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/profile', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                
+                const resultDiv = document.getElementById('profileResult');
+                resultDiv.style.display = 'block';
+                
+                if (response.ok) {
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+                        <h4>✅ Profile API Works!</h4>
+                        <p><strong>Name:</strong> ${data.user.firstName} ${data.user.lastName}</p>
+                        <p><strong>Email:</strong> ${data.user.email}</p>
+                        <p><strong>Phone:</strong> ${data.user.phone || 'Not set'}</p>
+                        <p><strong>Address:</strong> ${data.user.address || 'Not set'}</p>
+                        <p><strong>Role:</strong> ${data.user.role}</p>
+                    `;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.innerHTML = `<h4>❌ Profile API Failed:</h4><p>${data.error}</p>`;
+                }
+            } catch (error) {
+                document.getElementById('profileResult').innerHTML = `<h4>Network Error:</h4><p>${error.message}</p>`;
+            }
+        }
+
+        function goToProfile() {
+            window.location.href = '/profile';
+        }
+
+        // Check if already logged in
+        window.onload = function() {
+            const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
+            if (token) {
+                document.getElementById('loginResult').innerHTML = '<h4>✅ Already logged in! Token found in localStorage</h4>';
+                document.getElementById('loginResult').className = 'result success';
+                document.getElementById('loginResult').style.display = 'block';
+            }
+        }
+    </script>
+</body>
+</html>
