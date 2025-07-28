@@ -443,10 +443,10 @@ export default function BooksPage() {
                 {books.map((book) => (
                   <div
                     key={book.id}
-                    className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100 group cursor-pointer"
+                    className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100 group cursor-pointer flex flex-col h-full"
                     onClick={() => openBookModal(book)}
                   >
-                    <div className="relative h-56 md:h-64">
+                    <div className="relative h-56 md:h-64 flex-shrink-0">
                       <Image
                         src={book.image || '/book-placeholder.jpg'}
                         alt={book.title}
@@ -479,24 +479,31 @@ export default function BooksPage() {
                       </div>
                     </div>
                     
-                    <div className="p-4 md:p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-blue-600 text-xs md:text-sm font-medium bg-blue-100 px-2 py-1 rounded-full">
+                    <div className="p-4 md:p-6 flex flex-col flex-grow">
+                      <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+                        <span className="text-blue-600 text-xs md:text-sm font-medium bg-blue-100 px-2 py-1 rounded-full truncate">
                           {book.category.name}
                         </span>
-                        <span className="text-gray-500 text-xs md:text-sm">{book.publishedYear}</span>
+                        <span className="text-gray-500 text-xs md:text-sm flex-shrink-0">{book.publishedYear}</span>
                       </div>
                       
-                      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors">
+                      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors flex-shrink-0" 
+                          title={book.title}>
                         {book.title}
                       </h3>
-                      <p className="text-gray-600 mb-2 text-sm md:text-base">by {book.author}</p>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{book.description}</p>
+                      <p className="text-gray-600 mb-2 text-sm md:text-base flex-shrink-0 truncate" title={`by ${book.author}`}>
+                        by {book.author}
+                      </p>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow" title={book.description}>
+                        {book.description}
+                      </p>
                       
-                      <div className="space-y-3">
+                      <div className="space-y-3 flex-shrink-0">
                         <div className="flex items-center justify-between text-sm text-gray-500">
-                          <span>ISBN: {book.isbn}</span>
-                          <span>{book.publisher || 'Unknown Publisher'}</span>
+                          <span className="truncate" title={`ISBN: ${book.isbn}`}>ISBN: {book.isbn}</span>
+                          <span className="truncate text-right" title={book.publisher || 'Unknown Publisher'}>
+                            {book.publisher || 'Unknown Publisher'}
+                          </span>
                         </div>
                         
                         <div className="flex items-center justify-between text-sm">
@@ -516,7 +523,7 @@ export default function BooksPage() {
                                   setShowBorrowModal(true);
                                 }}
                                 disabled={book.availableCopies === 0}
-                                className={`w-full px-4 py-2 rounded-full font-medium transition-all duration-200 ${
+                                className={`w-full px-4 py-2 rounded-full font-medium transition-all duration-200 flex-shrink-0 ${
                                   book.availableCopies > 0
                                     ? "bg-blue-600 text-white hover:bg-blue-700"
                                     : "bg-gray-300 text-gray-500 cursor-not-allowed"
@@ -529,23 +536,23 @@ export default function BooksPage() {
                                   e.stopPropagation();
                                   toggleFavorite(book.id);
                                 }}
-                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-200 ${
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-200 flex-shrink-0 ${
                                   favorites.includes(book.id)
                                     ? "bg-red-500 text-white hover:bg-red-600"
                                     : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
                                 }`}
                                 aria-label={favorites.includes(book.id) ? "Remove from favorites" : "Add to favorites"}
                               >
-                                <svg className="w-4 h-4" fill={favorites.includes(book.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <svg className="w-4 h-4 flex-shrink-0" fill={favorites.includes(book.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                                 </svg>
-                                <span className="text-sm font-medium">
+                                <span className="text-sm font-medium truncate">
                                   {favorites.includes(book.id) ? "Favorited" : "Add to Favorites"}
                                 </span>
                               </button>
                             </>
                           ) : (
-                            <div className="text-center">
+                            <div className="text-center flex-shrink-0">
                               <p className="text-sm text-gray-500 mb-2">Login to borrow books</p>
                               <a
                                 href="/login"
