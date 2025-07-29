@@ -162,7 +162,15 @@ export async function GET(request: NextRequest) {
 
     // Filter by status if provided
     if (status && status !== 'all') {
-      whereClause.status = status.toUpperCase()
+      // Support multiple statuses separated by comma
+      const statuses = status.split(',').map(s => s.trim().toUpperCase())
+      if (statuses.length === 1) {
+        whereClause.status = statuses[0]
+      } else {
+        whereClause.status = {
+          in: statuses
+        }
+      }
     }
 
     const borrowRequests = await prisma.borrowRequest.findMany({

@@ -258,6 +258,16 @@ export default function Navigation() {
                     </svg>
                     <span className="group-hover/item:text-amber-600 transition-colors duration-200">Borrow Requests</span>
                   </Link>
+                  <Link
+                    href="/my-books"
+                    className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-green-400"
+                    onClick={closeAccountDropdown}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-green-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 4.533A9.707 9.707 0 006 3a9.735 9.735 0 00-3.25.555.75.75 0 00-.5.707v14.25a.75.75 0 001 .707A8.237 8.237 0 016 18.75c1.995 0 3.823.707 5.25 1.886V4.533zM12.75 20.636A8.214 8.214 0 0118 18.75c.966 0 1.89.166 2.75.47a.75.75 0 001-.708V4.262a.75.75 0 00-.5-.707A9.735 9.735 0 0018 3a9.707 9.707 0 00-5.25 1.533v16.103z" />
+                    </svg>
+                    <span className="group-hover/item:text-green-600 transition-colors duration-200">My Books</span>
+                  </Link>
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-red-50 text-sky-700 hover:text-red-600 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-red-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-red-400 w-full text-left"
