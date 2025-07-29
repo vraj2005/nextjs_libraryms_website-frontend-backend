@@ -256,7 +256,7 @@ export default function Navigation() {
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-amber-600">
                       <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
                     </svg>
-                    <span className="group-hover/item:text-amber-600 transition-colors duration-200">My Books</span>
+                    <span className="group-hover/item:text-amber-600 transition-colors duration-200">Borrow Requests</span>
                   </Link>
                   <button
                     onClick={handleLogout}

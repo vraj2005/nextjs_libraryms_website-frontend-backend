@@ -12,7 +12,7 @@ interface BorrowRequest {
   approvedDate?: string
   dueDate?: string
   returnDate?: string
-  reason?: string
+  notes?: string
   book: {
     id: string
     title: string
@@ -248,28 +248,34 @@ export default function BorrowedPage() {
                                 </span>
                               </div>
                               
-                              {(request.status === 'APPROVED' || request.status === 'RETURNED') && request.approvedDate && (
+                              {(request.status === 'APPROVED' || request.status === 'RETURNED') && (
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm text-gray-600">Approved Date:</span>
                                   <span className="text-sm font-medium text-green-700">
-                                    {new Date(request.approvedDate).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'short',
-                                      day: 'numeric'
-                                    })}
+                                    {request.approvedDate 
+                                      ? new Date(request.approvedDate).toLocaleDateString('en-US', {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric'
+                                        })
+                                      : 'Not available'
+                                    }
                                   </span>
                                 </div>
                               )}
                               
-                              {(request.status === 'APPROVED' || request.status === 'RETURNED') && request.dueDate && (
+                              {(request.status === 'APPROVED' || request.status === 'RETURNED') && (
                                 <div className="flex justify-between items-center">
                                   <span className="text-sm text-gray-600">Due Date (Return by):</span>
                                   <span className="text-sm font-medium text-orange-700">
-                                    {new Date(request.dueDate).toLocaleDateString('en-US', {
-                                      year: 'numeric',
-                                      month: 'short',
-                                      day: 'numeric'
-                                    })}
+                                    {request.dueDate 
+                                      ? new Date(request.dueDate).toLocaleDateString('en-US', {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric'
+                                        })
+                                      : 'Not available'
+                                    }
                                   </span>
                                 </div>
                               )}
@@ -291,10 +297,10 @@ export default function BorrowedPage() {
                         </div>
                       </div>
                       
-                      {request.reason && (
+                      {request.notes && (
                         <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                          <label className="text-sm font-medium text-gray-500">Request Reason</label>
-                          <p className="mt-1 text-sm text-gray-700">{request.reason}</p>
+                          <label className="text-sm font-medium text-gray-500">Request Notes</label>
+                          <p className="mt-1 text-sm text-gray-700">{request.notes}</p>
                         </div>
                       )}
                       
