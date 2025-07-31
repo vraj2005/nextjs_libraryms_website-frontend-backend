@@ -4,6 +4,7 @@ import "./globals.css";
 import ConditionalNavigation from "./components/ConditionalNavigation";
 import ConditionalFooter from "./components/ConditionalFooter";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { NotificationProvider } from "@/contexts/NotificationContext";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,11 +33,13 @@ export default function RootLayout({
         style={{ background: 'linear-gradient(120deg, #f0f9ff 0%, #e0f2fe 100%)' }}
       >
         <AuthProvider>
-          <ConditionalNavigation />
-          
-          {children}
-          
-          <ConditionalFooter />
+          <NotificationProvider>
+            <ConditionalNavigation />
+            
+            {children}
+            
+            <ConditionalFooter />
+          </NotificationProvider>
         </AuthProvider>
       </body>
     </html>

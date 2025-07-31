@@ -123,7 +123,7 @@ export async function PUT(request: NextRequest) {
     const updateData = await request.json()
     
     // Validate and sanitize update data
-    const allowedFields = ['firstName', 'lastName', 'phone', 'address', 'profileImage']
+    const allowedFields = ['firstName', 'lastName', 'email', 'phone', 'address', 'profileImage']
     const sanitizedData: any = {}
     
     for (const field of allowedFields) {

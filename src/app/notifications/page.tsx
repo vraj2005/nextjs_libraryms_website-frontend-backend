@@ -1,78 +1,142 @@
+/*
+ * NOTIFICATIONS PAGE - USER ISOLATION SECURITY
+ * 
+ * This page implements multiple layers of security to ensure users only see their own notifications:
+ * 
+ * 1. API Level Security (Primary):
+ *    - JWT token validation ensures only authenticated users can access
+ *    - Database queries strictly filter by userId: user.id
+ *    - All database operations (SELECT, UPDATE) include userId constraint
+ * 
+ * 2. Client-side Verification (Secondary):
+ *    - Verifies userInfo.userId matches current user.id
+ *    - Checks all notification.userId values match current user
+ *    - Logs security warnings if mismatches are detected
+ * 
+ * 3. UI Indicators:
+ *    - Page title shows current user's name
+ *    - Console logs confirm user identity and notification counts
+ * 
+ * This ensures complete user data isolation - no user can see another user's notifications.
+ */
+
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useAuth } from '@/contexts/AuthContext';
+import { useNotifications } from '@/contexts/NotificationContext';
 
 interface Notification {
-  id: number;
-  type: 'due' | 'overdue' | 'reserved' | 'renewal' | 'fine' | 'general';
+  id: string;
+  userId?: string; // Added for security verification
+  type: 'due' | 'overdue' | 'reserved' | 'renewal' | 'fine' | 'general' | 'borrow_request' | 'return_request';
   title: string;
   message: string;
-  timestamp: string;
+  createdAt: string;
   isRead: boolean;
   priority: 'low' | 'medium' | 'high';
 }
 
-const notifications: Notification[] = [
-  {
-    id: 1,
-    type: 'overdue',
-    title: 'Book Overdue',
-    message: '"Introduction to Algorithms" is 3 days overdue. Please return it to avoid additional fines.',
-    timestamp: '2024-07-22T10:30:00Z',
-    isRead: false,
-    priority: 'high'
-  },
-  {
-    id: 2,
-    type: 'due',
-    title: 'Book Due Soon',
-    message: '"Clean Code" is due tomorrow. You can renew it if needed.',
-    timestamp: '2024-07-22T08:15:00Z',
-    isRead: false,
-    priority: 'medium'
-  },
-  {
-    id: 3,
-    type: 'reserved',
-    title: 'Reserved Book Available',
-    message: '"The Midnight Library" is now available for pickup. Reserved until July 25th.',
-    timestamp: '2024-07-21T16:45:00Z',
-    isRead: true,
-    priority: 'medium'
-  },
-  {
-    id: 4,
-    type: 'renewal',
-    title: 'Book Renewed Successfully',
-    message: '"JavaScript: The Good Parts" has been renewed. New due date: August 5th.',
-    timestamp: '2024-07-21T14:20:00Z',
-    isRead: true,
-    priority: 'low'
-  },
-  {
-    id: 5,
-    type: 'fine',
-    title: 'Fine Applied',
-    message: 'A fine of ₹25 has been applied to your account for late return.',
-    timestamp: '2024-07-20T11:00:00Z',
-    isRead: true,
-    priority: 'high'
-  },
-  {
-    id: 6,
-    type: 'general',
-    title: 'Library Hours Update',
-    message: 'Library will be closed on July 26th for maintenance. Extended hours on July 27th.',
-    timestamp: '2024-07-19T09:30:00Z',
-    isRead: true,
-    priority: 'low'
-  }
-];
+interface NotificationResponse {
+  notifications: Notification[];
+  unreadCount: number;
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalNotifications: number;
+    limit: number;
+  };
+  userInfo?: {
+    userId: string;
+    email: string;
+    firstName: string;
+  };
+}
 
 export default function NotificationsPage() {
-  const [notificationList, setNotificationList] = useState(notifications);
+  const { user } = useAuth();
+  const { unreadCount, decrementUnreadCount, resetUnreadCount, fetchUnreadCount } = useNotifications();
+  const [notificationList, setNotificationList] = useState<Notification[]>([]);
   const [filter, setFilter] = useState<'all' | 'unread' | 'read'>('all');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  // Fetch notifications from API
+  const fetchNotifications = async () => {
+    if (!user) return;
+    
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        setError('Authentication required');
+        return;
+      }
+
+      console.log(`Fetching notifications for user: ${user.firstName} ${user.lastName} (ID: ${user.id})`);
+
+      const response = await fetch('/api/notifications', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch notifications');
+      }
+
+      const data: NotificationResponse = await response.json();
+      
+      // Security verification: ensure the response is for the correct user
+      if (data.userInfo && data.userInfo.userId !== user.id) {
+        console.error('Security Error: Received notifications for wrong user!', {
+          expectedUserId: user.id,
+          receivedUserId: data.userInfo.userId,
+          expectedUser: `${user.firstName} ${user.lastName}`,
+          receivedUser: data.userInfo.firstName
+        });
+        setError('Security error: User mismatch detected');
+        return;
+      }
+      
+      // Additional client-side verification: ensure all notifications belong to current user
+      const invalidNotifications = data.notifications.filter(notif => 
+        notif.userId && notif.userId !== user.id
+      );
+      
+      if (invalidNotifications.length > 0) {
+        console.error('Security Warning: Received notifications for other users!', invalidNotifications);
+        setError('Security error: Invalid notifications received');
+        return;
+      }
+      
+      console.log(`✅ Successfully loaded ${data.notifications.length} notifications for user: ${user.firstName} ${user.lastName}`);
+      setNotificationList(data.notifications);
+      // The context already manages unread count, so no need to set it here
+    } catch (err) {
+      console.error('Error fetching notifications:', err);
+      setError('Failed to load notifications');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Fetch notifications on component mount and when user changes
+  useEffect(() => {
+    if (user) {
+      fetchNotifications();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // Also refresh the global unread count when this page loads
+  useEffect(() => {
+    if (user) {
+      fetchUnreadCount();
+    }
+  }, [user, fetchUnreadCount]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -106,6 +170,12 @@ export default function NotificationsPage() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
           </svg>
         );
+      case 'borrow_request':
+        return (
+          <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+          </svg>
+        );
       default:
         return (
           <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -126,22 +196,76 @@ export default function NotificationsPage() {
     return date.toLocaleDateString();
   };
 
-  const markAsRead = (id: number) => {
-    setNotificationList(prev => 
-      prev.map(notif => 
-        notif.id === id ? { ...notif, isRead: true } : notif
-      )
-    );
+  const markAsRead = async (id: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const response = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'markAsRead',
+          notificationIds: [id]
+        })
+      });
+
+      if (response.ok) {
+        setNotificationList(prev => 
+          prev.map(notif => 
+            notif.id === id ? { ...notif, isRead: true } : notif
+          )
+        );
+        decrementUnreadCount();
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  const markAllAsRead = () => {
-    setNotificationList(prev => 
-      prev.map(notif => ({ ...notif, isRead: true }))
-    );
+  const markAllAsRead = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) return;
+
+      const response = await fetch('/api/notifications', {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          action: 'markAllAsRead'
+        })
+      });
+
+      if (response.ok) {
+        setNotificationList(prev => 
+          prev.map(notif => ({ ...notif, isRead: true }))
+        );
+        resetUnreadCount();
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
   };
 
-  const deleteNotification = (id: number) => {
-    setNotificationList(prev => prev.filter(notif => notif.id !== id));
+  const deleteNotification = async (id: string) => {
+    // For now, just remove from local state - could implement delete API later
+    setNotificationList(prev => {
+      const notification = prev.find(notif => notif.id === id);
+      const newList = prev.filter(notif => notif.id !== id);
+      
+      // Update unread count if the deleted notification was unread
+      if (notification && !notification.isRead) {
+        decrementUnreadCount();
+      }
+      
+      return newList;
+    });
   };
 
   const filteredNotifications = notificationList.filter(notif => {
@@ -150,7 +274,51 @@ export default function NotificationsPage() {
     return true;
   });
 
-  const unreadCount = notificationList.filter(notif => !notif.isRead).length;
+  // Show loading or error states
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Authentication Required</h1>
+          <p className="text-gray-600 mb-4">Please log in to view your notifications.</p>
+          <Link
+            href="/login"
+            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Sign In
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading notifications...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">Error</h1>
+          <p className="text-gray-600 mb-4">{error}</p>
+          <button
+            onClick={fetchNotifications}
+            className="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-sky-50 via-white to-blue-50 py-8">
@@ -162,7 +330,7 @@ export default function NotificationsPage() {
               <svg className="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-5 5v-5zM11.613 15.931l-1.175-5.334A2.966 2.966 0 0013.175 8h.65A2.966 2.966 0 0016.562 10.597l-1.175 5.334M9 3v4M15 3v4M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              Notifications
+              Notifications for {user.firstName} {user.lastName}
               {unreadCount > 0 && (
                 <span className="bg-red-500 text-white text-sm font-bold rounded-full px-2 py-1">
                   {unreadCount}
@@ -277,7 +445,7 @@ export default function NotificationsPage() {
                         {notification.message}
                       </p>
                       <p className="text-xs text-gray-500 mt-2">
-                        {formatTimestamp(notification.timestamp)}
+                        {formatTimestamp(notification.createdAt)}
                       </p>
                     </div>
                   </div>

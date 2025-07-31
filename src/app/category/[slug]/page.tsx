@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext'
+import { useNotifications } from '@/contexts/NotificationContext'
 import Image from 'next/image'
 
 interface Book {
@@ -46,6 +47,7 @@ interface PaginationInfo {
 
 export default function CategoryPage() {
   const { user } = useAuth()
+  const { fetchUnreadCount } = useNotifications()
   const params = useParams()
   const slug = params?.slug as string
 
@@ -204,6 +206,9 @@ export default function CategoryPage() {
         
         // Refresh books to update any changes
         fetchBooks()
+        
+        // Refresh notification count as a new notification was created
+        fetchUnreadCount()
       } else {
         // Show specific error message
         const errorMessage = data.error || 'Failed to submit borrow request'
