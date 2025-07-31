@@ -164,6 +164,73 @@ export default function HomePage() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [favorites, setFavorites] = useState<number[]>([]);
+  const [realCategories, setRealCategories] = useState<any[]>([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+
+  // Fetch real categories with book counts
+  const fetchCategories = async () => {
+    try {
+      setCategoriesLoading(true);
+      const response = await fetch('/api/categories');
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Map API categories to the format expected by the UI
+        const mappedCategories = data.categories.map((cat: any) => ({
+          id: cat.id,
+          name: cat.name,
+          description: cat.description || `Browse ${cat.name.toLowerCase()} books`,
+          icon: getCategoryIcon(cat.name),
+          count: cat._count.books,
+          color: getCategoryColor(cat.name),
+          link: `/category/${cat.name.toLowerCase().replace(/\s+/g, '-')}`
+        }));
+        
+        setRealCategories(mappedCategories);
+      } else {
+        // Fallback to static categories if API fails
+        setRealCategories(categories);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Fallback to static categories if API fails
+      setRealCategories(categories);
+    } finally {
+      setCategoriesLoading(false);
+    }
+  };
+
+  // Helper function to get category icon
+  const getCategoryIcon = (categoryName: string) => {
+    const name = categoryName.toLowerCase();
+    if (name.includes('fiction')) return '📚';
+    if (name.includes('academic')) return '🎓';
+    if (name.includes('journal')) return '📰';
+    if (name.includes('reference')) return '📑';
+    if (name.includes('digital')) return '💻';
+    if (name.includes('science')) return '🔬';
+    if (name.includes('history')) return '📜';
+    if (name.includes('art')) return '🎨';
+    if (name.includes('technology')) return '⚡';
+    if (name.includes('business')) return '💼';
+    return '📖';
+  };
+
+  // Helper function to get category color
+  const getCategoryColor = (categoryName: string) => {
+    const name = categoryName.toLowerCase();
+    if (name.includes('fiction')) return 'from-purple-400 to-purple-600';
+    if (name.includes('academic')) return 'from-blue-400 to-blue-600';
+    if (name.includes('journal')) return 'from-orange-400 to-orange-600';
+    if (name.includes('reference')) return 'from-red-400 to-red-600';
+    if (name.includes('digital')) return 'from-pink-400 to-pink-600';
+    if (name.includes('science')) return 'from-green-400 to-green-600';
+    if (name.includes('history')) return 'from-yellow-400 to-yellow-600';
+    if (name.includes('art')) return 'from-indigo-400 to-indigo-600';
+    if (name.includes('technology')) return 'from-cyan-400 to-cyan-600';
+    if (name.includes('business')) return 'from-emerald-400 to-emerald-600';
+    return 'from-gray-400 to-gray-600';
+  };
 
   // Auto-slide functionality
   useEffect(() => {
@@ -173,12 +240,15 @@ export default function HomePage() {
     return () => clearInterval(interval);
   }, []);
 
-  // Load favorites from localStorage
+  // Load favorites from localStorage and fetch categories
   useEffect(() => {
     const savedFavorites = localStorage.getItem('favorites');
     if (savedFavorites) {
       setFavorites(JSON.parse(savedFavorites));
     }
+    
+    // Fetch real categories from API
+    fetchCategories();
   }, []);
 
   const toggleFavorite = (bookId: number) => {
@@ -351,27 +421,47 @@ export default function HomePage() {
             </p>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {categories.map((category) => (
-              <Link
-                key={category.id}
-                href={category.link}
-                className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-sky-100 hover:border-sky-200"
-              >
-                <div className={`bg-gradient-to-r ${category.color} w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-2xl md:text-3xl mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
-                  {category.icon}
+            {categoriesLoading ? (
+              // Loading skeleton
+              [...Array(6)].map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white/70 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-xl border border-sky-100 animate-pulse"
+                >
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-300 rounded-2xl mb-4 md:mb-6"></div>
+                  <div className="h-6 md:h-8 bg-gray-300 rounded mb-2"></div>
+                  <div className="h-4 bg-gray-200 rounded mb-4"></div>
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-20 bg-gray-200 rounded"></div>
+                    <div className="w-5 h-5 bg-gray-200 rounded"></div>
+                  </div>
                 </div>
-                <h3 className="text-xl md:text-2xl font-bold text-sky-800 mb-2 group-hover:text-sky-600 transition-colors">
-                  {category.name}
-                </h3>
-                <p className="text-sky-600 mb-4 text-sm md:text-base">{category.description}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-sky-700 font-semibold text-sm md:text-base">{category.count} books</span>
-                  <svg className="w-5 h-5 md:w-6 md:h-6 text-sky-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all duration-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                  </svg>
-                </div>
-              </Link>
-            ))}
+              ))
+            ) : (
+              realCategories.map((category) => (
+                <Link
+                  key={category.id}
+                  href={category.link}
+                  className="group bg-white/70 backdrop-blur-sm rounded-2xl p-6 md:p-8 shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-sky-100 hover:border-sky-200"
+                >
+                  <div className={`bg-gradient-to-r ${category.color} w-16 h-16 md:w-20 md:h-20 rounded-2xl flex items-center justify-center text-2xl md:text-3xl mb-4 md:mb-6 group-hover:scale-110 transition-transform duration-300 shadow-lg`}>
+                    {category.icon}
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold text-sky-800 mb-2 group-hover:text-sky-600 transition-colors">
+                    {category.name}
+                  </h3>
+                  <p className="text-sky-600 mb-4 text-sm md:text-base">{category.description}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sky-700 font-semibold text-sm md:text-base">
+                      {category.count} {category.count === 1 ? 'book' : 'books'}
+                    </span>
+                    <svg className="w-5 h-5 md:w-6 md:h-6 text-sky-400 group-hover:text-sky-600 group-hover:translate-x-1 transition-all duration-200" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                    </svg>
+                  </div>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </section>
