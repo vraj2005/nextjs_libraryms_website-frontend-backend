@@ -572,62 +572,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
-      {/* Quick Actions */}
-      <section className="py-12 md:py-16">
-        <div className="max-w-7xl mx-auto px-4 md:px-8">
-          <div className="text-center mb-8 md:mb-12">
-            <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-sky-800 mb-4">
-              Quick Actions
-            </h2>
-            <p className="text-sky-600 text-lg md:text-xl max-w-2xl mx-auto">
-              Access essential library services with just one click
-            </p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
-            <Link
-              href="/reserve-room"
-              className="group bg-gradient-to-br from-purple-500 to-purple-600 text-white p-6 md:p-8 rounded-2xl text-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-            >
-              <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-              </svg>
-              <h3 className="text-lg md:text-xl font-bold mb-2">Reserve Study Room</h3>
-              <p className="text-purple-100 text-sm md:text-base">Book private study spaces</p>
-            </Link>
-            <Link
-              href="/request-book"
-              className="group bg-gradient-to-br from-green-500 to-green-600 text-white p-6 md:p-8 rounded-2xl text-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-            >
-              <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z" />
-              </svg>
-              <h3 className="text-lg md:text-xl font-bold mb-2">Request New Book</h3>
-              <p className="text-green-100 text-sm md:text-base">Suggest books for library</p>
-            </Link>
-            <Link
-              href="/renew-books"
-              className="group bg-gradient-to-br from-blue-500 to-blue-600 text-white p-6 md:p-8 rounded-2xl text-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-            >
-              <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-              </svg>
-              <h3 className="text-lg md:text-xl font-bold mb-2">Renew Books</h3>
-              <p className="text-blue-100 text-sm md:text-base">Extend borrowing period</p>
-            </Link>
-            <Link
-              href="/help"
-              className="group bg-gradient-to-br from-orange-500 to-orange-600 text-white p-6 md:p-8 rounded-2xl text-center shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2"
-            >
-              <svg className="w-12 h-12 md:w-16 md:h-16 mx-auto mb-4 group-hover:scale-110 transition-transform duration-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="text-lg md:text-xl font-bold mb-2">Get Help</h3>
-              <p className="text-orange-100 text-sm md:text-base">Contact librarian support</p>
-            </Link>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }
