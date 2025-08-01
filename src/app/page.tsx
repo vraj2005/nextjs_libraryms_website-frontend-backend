@@ -897,54 +897,101 @@ export default function HomePage() {
           onClick={() => setShowBorrowModal(false)}
         >
           <div 
-            className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full shadow-2xl border border-white/20"
+            className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/20"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-bold text-gray-800">Request to Borrow</h2>
-                <button
-                  onClick={() => setShowBorrowModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl transition-colors"
-                >
-                  ×
-                </button>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+                </svg>
               </div>
-              
-              <div className="mb-4">
-                <h3 className="font-semibold text-gray-800">{selectedBook.title}</h3>
-                <p className="text-gray-600 text-sm">by {selectedBook.author}</p>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Request to Borrow</h3>
+                <p className="text-sm text-gray-600">Submit your borrowing request</p>
               </div>
-              
-              <div className="mb-4">
-                <label htmlFor="borrowReason" className="block text-sm font-medium text-gray-700 mb-2">
-                  Reason for borrowing (optional)
-                </label>
-                <textarea
-                  id="borrowReason"
-                  value={borrowReason}
-                  onChange={(e) => setBorrowReason(e.target.value)}
-                  placeholder="e.g., Research, Assignment, Personal reading..."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  rows={3}
-                />
+            </div>
+            
+            {/* Book Info */}
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
+              <h4 className="font-bold text-gray-900 mb-1">{selectedBook.title}</h4>
+              <p className="text-sm text-gray-600 mb-2">by {selectedBook.author}</p>
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <span>ISBN: {selectedBook.isbn}</span>
+                <span className="flex items-center gap-1">
+                  <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                  {selectedBook.availableCopies} available
+                </span>
               </div>
-              
-              <div className="flex gap-3">
-                <button
-                  onClick={() => setShowBorrowModal(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={requestBorrow}
-                  disabled={submitting}
-                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {submitting ? 'Submitting...' : 'Submit Request'}
-                </button>
+            </div>
+
+            {/* Request Form */}
+            <div className="mb-6">
+              <label className="block text-sm font-semibold text-gray-800 mb-3">
+                Reason for borrowing <span className="text-gray-500 font-normal">(optional)</span>
+              </label>
+              <textarea
+                value={borrowReason}
+                onChange={(e) => setBorrowReason(e.target.value)}
+                placeholder="e.g., Research for assignment, Personal reading, Course requirement..."
+                rows={4}
+                className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 text-base leading-relaxed resize-none"
+              />
+              <p className="mt-2 text-xs text-gray-600">
+                💡 Providing a reason helps the librarian understand your academic or research needs and may expedite approval.
+              </p>
+            </div>
+
+            {/* Info Box */}
+            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-6">
+              <div className="flex items-start gap-2">
+                <svg className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm text-yellow-800">
+                  <p className="font-medium mb-1">What happens next?</p>
+                  <ul className="text-xs space-y-1">
+                    <li>• Your request will be sent to the library admin</li>
+                    <li>• You'll receive a notification with the decision</li>
+                    <li>• If approved, you'll have 14 days to return the book</li>
+                    <li>• Late returns may incur fines</li>
+                  </ul>
+                </div>
               </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex space-x-3">
+              <button
+                onClick={() => {
+                  setShowBorrowModal(false)
+                  setBorrowReason('')
+                  setSelectedBook(null)
+                }}
+                className="flex-1 px-6 py-3 border-2 border-gray-300 text-gray-800 font-semibold rounded-xl hover:bg-gray-50 transition-colors"
+                disabled={submitting}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={requestBorrow}
+                disabled={submitting}
+                className="flex-1 px-6 py-3 bg-blue-600 text-white font-semibold rounded-xl hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+              >
+                {submitting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Submitting...
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                    Submit Request
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
