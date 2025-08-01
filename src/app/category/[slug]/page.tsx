@@ -535,94 +535,178 @@ export default function CategoryPage() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="relative">
-              <button
-                onClick={() => setShowBookModal(false)}
-                className="absolute top-4 right-4 z-10 bg-white/80 hover:bg-white rounded-full p-2 transition-colors"
-              >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              
-              <div className="flex flex-col md:flex-row">
-                <div className="md:w-1/3 p-6">
-                  <div className="relative aspect-[3/4] w-full">
-                    <Image
-                      src={selectedBook.image || '/book-placeholder.jpg'}
-                      alt={selectedBook.title}
-                      fill
-                      className="object-contain rounded-xl"
-                    />
-                  </div>
-                </div>
-                
-                <div className="md:w-2/3 p-6">
-                  <div className="mb-4">
-                    <span className="text-blue-600 text-sm font-medium bg-blue-100 px-3 py-1 rounded-full">
-                      {selectedBook.category.name}
-                    </span>
-                  </div>
-                  
-                  <h2 className="text-3xl font-bold text-gray-900 mb-2">{selectedBook.title}</h2>
-                  <p className="text-xl text-gray-600 mb-4">by {selectedBook.author}</p>
-                  
-                  <div className="grid grid-cols-2 gap-4 mb-6 text-sm">
-                    <div>
-                      <span className="font-medium text-gray-700">ISBN:</span>
-                      <span className="ml-2 text-gray-600">{selectedBook.isbn}</span>
+              {/* Modal Header */}
+              <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                <h2 className="text-2xl font-bold text-gray-900">Book Details</h2>
+                <button
+                  onClick={() => setShowBookModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                >
+                  <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-6">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                  {/* Book Image */}
+                  <div className="lg:col-span-1">
+                    <div className="relative h-80 lg:h-96 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl overflow-hidden shadow-lg">
+                      <Image
+                        src={selectedBook.image || '/book-placeholder.jpg'}
+                        alt={selectedBook.title}
+                        fill
+                        className="object-contain"
+                        sizes="(max-width: 1024px) 100vw, 33vw"
+                      />
                     </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Published:</span>
-                      <span className="ml-2 text-gray-600">{selectedBook.publishedYear || 'Unknown'}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Publisher:</span>
-                      <span className="ml-2 text-gray-600">{selectedBook.publisher || 'Unknown'}</span>
-                    </div>
-                    <div>
-                      <span className="font-medium text-gray-700">Available:</span>
-                      <span className="ml-2 text-gray-600">{selectedBook.availableCopies}/{selectedBook.totalCopies}</span>
+                    
+                    {/* Availability Status */}
+                    <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                      <h4 className="font-bold text-gray-900 mb-3 text-base">Availability Status</h4>
+                      <div className="space-y-3 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-700 font-medium">Total Copies:</span>
+                          <span className="font-bold text-gray-900">{selectedBook.totalCopies}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700 font-medium">Available:</span>
+                          <span className="font-bold text-green-600">{selectedBook.availableCopies}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-700 font-medium">Borrowed:</span>
+                          <span className="font-bold text-blue-600">{selectedBook.totalCopies - selectedBook.availableCopies}</span>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                  
-                  {selectedBook.description && (
-                    <div className="mb-6">
-                      <h3 className="font-medium text-gray-700 mb-2">Description</h3>
-                      <p className="text-gray-600 leading-relaxed">{selectedBook.description}</p>
+
+                  {/* Book Information */}
+                  <div className="lg:col-span-2">
+                    <div className="space-y-6">
+                      {/* Title and Author */}
+                      <div>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedBook.title}</h1>
+                        <p className="text-xl text-gray-600 mb-4">by {selectedBook.author}</p>
+                        
+                        <div className="flex items-center gap-4 mb-4">
+                          <div className="flex items-center gap-1">
+                            <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                              <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span className="font-semibold text-gray-900">ISBN: {selectedBook.isbn}</span>
+                          </div>
+                          
+                          <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                            selectedBook.availableCopies > 0
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {selectedBook.availableCopies > 0 ? "Available" : "Not Available"}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                        <p className="text-gray-800 leading-relaxed text-base">{selectedBook.description || 'No description available.'}</p>
+                      </div>
+
+                      {/* Book Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Publication Details</h3>
+                          <div className="space-y-3 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Publisher:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.publisher || 'Not specified'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Year:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.publishedYear || 'Not specified'}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">ISBN:</span>
+                              <span className="font-semibold text-gray-900 font-mono text-xs">{selectedBook.isbn}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Active:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.isActive ? 'Yes' : 'No'}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Library Information</h3>
+                          <div className="space-y-3 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Category:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.category.name}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Total Copies:</span>
+                              <span className="font-semibold text-gray-900">{selectedBook.totalCopies}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Available:</span>
+                              <span className="font-semibold text-green-600">{selectedBook.availableCopies}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700 font-medium">Status:</span>
+                              <span className={`font-semibold ${selectedBook.availableCopies > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {selectedBook.availableCopies > 0 ? 'Available' : 'Not Available'}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Action Buttons */}
+                      <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                        {user ? (
+                          <>
+                            <button
+                              onClick={() => {
+                                if (selectedBook.availableCopies > 0) {
+                                  setShowBookModal(false);
+                                  setShowBorrowModal(true);
+                                }
+                              }}
+                              className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${
+                                selectedBook.availableCopies > 0
+                                  ? "bg-blue-600 hover:bg-blue-700 text-white"
+                                  : "bg-gray-400 text-gray-200 cursor-not-allowed"
+                              }`}
+                              disabled={selectedBook.availableCopies === 0}
+                            >
+                              {selectedBook.availableCopies > 0 ? "Request to Borrow" : "Currently Unavailable"}
+                            </button>
+                            
+                            <button
+                              onClick={() => toggleFavorite(selectedBook.id)}
+                              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
+                                favorites.includes(selectedBook.id)
+                                  ? "bg-red-500 hover:bg-red-600 text-white"
+                                  : "bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-500"
+                              }`}
+                            >
+                              <svg className="w-5 h-5" fill={favorites.includes(selectedBook.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                              {favorites.includes(selectedBook.id) ? "Remove from Favorites" : "Add to Favorites"}
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex-1 py-3 px-6 rounded-xl font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200 text-center">
+                            Login to Borrow
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  )}
-                  
-                  {user && (
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => {
-                          setShowBookModal(false);
-                          setShowBorrowModal(true);
-                        }}
-                        disabled={selectedBook.availableCopies === 0}
-                        className={`flex-1 px-6 py-3 rounded-full font-medium transition-all duration-200 ${
-                          selectedBook.availableCopies > 0
-                            ? "bg-blue-600 text-white hover:bg-blue-700"
-                            : "bg-gray-300 text-gray-500 cursor-not-allowed"
-                        }`}
-                      >
-                        {selectedBook.availableCopies > 0 ? 'Request to Borrow' : 'Not Available'}
-                      </button>
-                      
-                      <button
-                        onClick={() => toggleFavorite(selectedBook.id)}
-                        className={`px-6 py-3 rounded-full transition-all duration-200 ${
-                          favorites.includes(selectedBook.id)
-                            ? "bg-pink-100 text-pink-600 hover:bg-pink-200"
-                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}
-                      >
-                        <svg className="w-5 h-5" fill={favorites.includes(selectedBook.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                      </button>
-                    </div>
-                  )}
+                  </div>
                 </div>
               </div>
             </div>
