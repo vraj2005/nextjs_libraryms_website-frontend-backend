@@ -699,14 +699,20 @@ export default function HomePage() {
 
       {/* Book Details Modal */}
       {showBookModal && selectedBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50"
+          onClick={closeBookModal}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-2xl font-bold text-gray-800">Book Details</h2>
                 <button
                   onClick={closeBookModal}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  className="text-gray-500 hover:text-gray-700 text-2xl transition-colors"
                 >
                   ×
                 </button>
@@ -788,14 +794,20 @@ export default function HomePage() {
 
       {/* Borrow Request Modal */}
       {showBorrowModal && selectedBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full">
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50"
+          onClick={() => setShowBorrowModal(false)}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full shadow-2xl border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="p-6">
               <div className="flex justify-between items-start mb-4">
                 <h2 className="text-xl font-bold text-gray-800">Request to Borrow</h2>
                 <button
                   onClick={() => setShowBorrowModal(false)}
-                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                  className="text-gray-500 hover:text-gray-700 text-2xl transition-colors"
                 >
                   ×
                 </button>
