@@ -526,8 +526,14 @@ export default function CategoryPage() {
 
       {/* Book Details Modal */}
       {showBookModal && selectedBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50"
+          onClick={() => setShowBookModal(false)}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="relative">
               <button
                 onClick={() => setShowBookModal(false)}
@@ -626,8 +632,14 @@ export default function CategoryPage() {
 
       {/* Borrow Request Modal */}
       {showBorrowModal && selectedBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50"
+          onClick={() => setShowBorrowModal(false)}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 className="text-xl font-bold text-gray-900 mb-4">Request to Borrow</h3>
             <p className="text-gray-600 mb-4">
               You are requesting to borrow <span className="font-medium">"{selectedBook.title}"</span>

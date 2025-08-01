@@ -626,8 +626,14 @@ export default function BooksPage() {
 
       {/* Book Details Modal */}
       {showBookModal && selectedBook && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50"
+          onClick={() => setShowBookModal(false)}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="relative">
               {/* Modal Header */}
               <div className="flex justify-between items-center p-6 border-b border-gray-200">
@@ -801,8 +807,14 @@ export default function BooksPage() {
 
       {/* Borrow Modal */}
       {showBorrowModal && selectedBook && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl">
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50"
+          onClick={() => setShowBorrowModal(false)}
+        >
+          <div 
+            className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/20"
+            onClick={(e) => e.stopPropagation()}
+          >
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
                 <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
