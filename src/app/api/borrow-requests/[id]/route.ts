@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { getUserFromToken } from '@/lib/auth'
+import { NotificationService } from '@/lib/notification-service'
 
 export async function PATCH(
   request: NextRequest,
@@ -85,7 +86,7 @@ export async function PATCH(
             status: 'APPROVED',
             approvedDate: new Date(),
             dueDate,
-            approvedBy: user.userId,
+            approvedBy: user.id,
             notes
           }
         }),
@@ -99,15 +100,13 @@ export async function PATCH(
         })
       ])
 
-      // Create notification for user
-      await prisma.notification.create({
-        data: {
-          userId: borrowRequest.userId,
-          title: 'Borrow Request Approved',
-          message: `Your borrow request for "${borrowRequest.book.title}" has been approved. Due date: ${dueDate.toDateString()}`,
-          type: 'INFO'
-        }
-      })
+      // Create notification for user using NotificationService
+      await NotificationService.notifyBorrowRequestApproved(
+        borrowRequest.userId,
+        borrowRequest.book.title,
+        dueDate,
+        user.id
+      )
 
       // Create user history
       await prisma.userHistory.create({
@@ -140,20 +139,18 @@ export async function PATCH(
         where: { id: params.id },
         data: {
           status: 'REJECTED',
-          approvedBy: user.userId,
+          approvedBy: user.id,
           notes
         }
       })
 
-      // Create notification for user
-      await prisma.notification.create({
-        data: {
-          userId: borrowRequest.userId,
-          title: 'Borrow Request Rejected',
-          message: `Your borrow request for "${borrowRequest.book.title}" has been rejected. ${notes ? `Reason: ${notes}` : ''}`,
-          type: 'WARNING'
-        }
-      })
+      // Create notification for user using NotificationService
+      await NotificationService.notifyBorrowRequestRejected(
+        borrowRequest.userId,
+        borrowRequest.book.title,
+        notes,
+        user.id
+      )
 
       // Create user history
       await prisma.userHistory.create({
@@ -183,7 +180,7 @@ export async function PATCH(
       }
 
       const returnDate = new Date()
-      const isOverdue = borrowRequest.dueDate && returnDate > borrowRequest.dueDate
+      const isOverdue = borrowRequest.dueDate ? returnDate > borrowRequest.dueDate : false
 
       // Update borrow request and book availability
       const [updatedRequest] = await prisma.$transaction([
@@ -205,42 +202,35 @@ export async function PATCH(
         })
       ])
 
-      // Create fine if overdue
-      if (isOverdue && borrowRequest.dueDate) {
-        const daysOverdue = Math.ceil((returnDate.getTime() - borrowRequest.dueDate.getTime()) / (1000 * 60 * 60 * 24))
-        const fineAmount = daysOverdue * 1.0 // $1 per day
+        // Create fine if overdue
+        if (isOverdue && borrowRequest.dueDate) {
+          const daysOverdue = Math.ceil((returnDate.getTime() - borrowRequest.dueDate.getTime()) / (1000 * 60 * 60 * 24))
+          const fineAmount = daysOverdue * 1.0 // ₹1 per day
 
-        await prisma.fine.create({
-          data: {
-            userId: borrowRequest.userId,
-            borrowRequestId: borrowRequest.id,
-            amount: fineAmount,
+          await prisma.fine.create({
+            data: {
+              userId: borrowRequest.userId,
+              borrowRequestId: borrowRequest.id,
+              amount: fineAmount,
+              daysOverdue
+            }
+          })
+
+          // Create notification for fine using NotificationService
+          await NotificationService.notifyFineIssued(
+            borrowRequest.userId,
+            borrowRequest.book.title,
+            fineAmount,
             daysOverdue
-          }
-        })
-
-        // Create notification for fine
-        await prisma.notification.create({
-          data: {
-            userId: borrowRequest.userId,
-            title: 'Overdue Fine Issued',
-            message: `A fine of $${fineAmount.toFixed(2)} has been issued for the overdue return of "${borrowRequest.book.title}"`,
-            type: 'ALERT'
-          }
-        })
-      }
-
-      // Create notification for user
-      await prisma.notification.create({
-        data: {
-          userId: borrowRequest.userId,
-          title: 'Book Returned',
-          message: `"${borrowRequest.book.title}" has been returned successfully.${isOverdue ? ' A fine has been issued for the overdue return.' : ''}`,
-          type: isOverdue ? 'WARNING' : 'INFO'
+          )
         }
-      })
 
-      // Create user history
+        // Create notification for book return using NotificationService
+        await NotificationService.notifyBookReturned(
+          borrowRequest.userId,
+          borrowRequest.book.title,
+          isOverdue
+        )      // Create user history
       await prisma.userHistory.create({
         data: {
           userId: borrowRequest.userId,

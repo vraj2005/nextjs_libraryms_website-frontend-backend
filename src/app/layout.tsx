@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import ConditionalNavigation from "./components/ConditionalNavigation";
-import ConditionalFooter from "./components/ConditionalFooter";
-import { AuthProvider } from "@/contexts/AuthContext";
-import { NotificationProvider } from "@/contexts/NotificationContext";
+import ClientLayout from "./components/ClientLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,15 +29,9 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         style={{ background: 'linear-gradient(120deg, #f0f9ff 0%, #e0f2fe 100%)' }}
       >
-        <AuthProvider>
-          <NotificationProvider>
-            <ConditionalNavigation />
-            
-            {children}
-            
-            <ConditionalFooter />
-          </NotificationProvider>
-        </AuthProvider>
+        <ClientLayout>
+          {children}
+        </ClientLayout>
       </body>
     </html>
   );

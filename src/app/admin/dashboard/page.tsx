@@ -228,6 +228,30 @@ export default function AdminDashboard() {
 
           {/* Summary Cards */}
           <div className="space-y-6">
+            {/* Quick Actions */}
+            <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">📨 Notification Center</h3>
+              <div className="space-y-3">
+                <Link href="/admin/notifications" className="block w-full text-center bg-blue-50 hover:bg-blue-100 text-blue-700 py-2 px-4 rounded-lg text-sm font-medium transition-colors">
+                  Manage Automated Notifications
+                </Link>
+                <div className="grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => window.open('/api/notifications/automated', '_blank')}
+                    className="bg-green-50 hover:bg-green-100 text-green-700 py-2 px-3 rounded text-xs font-medium transition-colors"
+                  >
+                    📅 Due Reminders
+                  </button>
+                  <button 
+                    onClick={() => window.open('/api/notifications/automated', '_blank')}
+                    className="bg-orange-50 hover:bg-orange-100 text-orange-700 py-2 px-3 rounded text-xs font-medium transition-colors"
+                  >
+                    ⏰ Overdue Notices
+                  </button>
+                </div>
+              </div>
+            </div>
+
             {/* Today's Summary */}
             <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Today's Summary</h3>
