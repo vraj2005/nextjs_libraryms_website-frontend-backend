@@ -23,6 +23,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
     const search = searchParams.get('search')
+    const featured = searchParams.get('featured')
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '12')
     const sortBy = searchParams.get('sortBy') || 'title'
@@ -35,6 +36,10 @@ export async function GET(request: NextRequest) {
 
     if (category && category !== 'all') {
       where.categoryId = category
+    }
+
+    if (featured === 'true') {
+      where.isFeatured = true
     }
 
     if (search) {
@@ -112,7 +117,8 @@ export async function POST(request: NextRequest) {
       image, 
       totalCopies, 
       publishedYear, 
-      publisher 
+      publisher,
+      isFeatured 
     } = await request.json()
 
     if (!title || !author || !categoryId) {
@@ -154,7 +160,8 @@ export async function POST(request: NextRequest) {
         totalCopies: totalCopies || 1,
         availableCopies: totalCopies || 1,
         publishedYear,
-        publisher
+        publisher,
+        ...(isFeatured !== undefined && { isFeatured })
       },
       include: {
         category: true

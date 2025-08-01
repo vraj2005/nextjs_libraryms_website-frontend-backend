@@ -88,7 +88,8 @@ export async function PUT(
       image, 
       totalCopies, 
       publishedYear, 
-      publisher 
+      publisher,
+      isFeatured 
     } = await request.json()
 
     // Check if category exists
@@ -129,7 +130,8 @@ export async function PUT(
         ...(image !== undefined && { image }),
         ...(totalCopies !== undefined && { totalCopies, availableCopies }),
         ...(publishedYear !== undefined && { publishedYear }),
-        ...(publisher !== undefined && { publisher })
+        ...(publisher !== undefined && { publisher }),
+        ...(isFeatured !== undefined && { isFeatured })
       },
       include: {
         category: true
@@ -141,7 +143,7 @@ export async function PUT(
       data: {
         bookId: updatedBook.id,
         action: 'UPDATED',
-        userId: user.userId,
+        userId: user.id,
         oldData: JSON.stringify(currentBook),
         newData: JSON.stringify(updatedBook)
       }
@@ -224,7 +226,7 @@ export async function DELETE(
       data: {
         bookId: deletedBook.id,
         action: 'DELETED',
-        userId: user.userId,
+        userId: user.id,
         oldData: JSON.stringify(book)
       }
     })
