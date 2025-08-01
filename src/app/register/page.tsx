@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { generateLetterAvatar, validateImageFile } from "@/lib/avatar-utils";
 
 export default function RegisterPage() {
 	const [formData, setFormData] = useState({
@@ -10,9 +11,9 @@ export default function RegisterPage() {
 		email: "",
 		password: "",
 		confirmPassword: "",
+		username: "",
 		phone: "",
-		studentId: "",
-		userType: "student",
+		address: "",
 		agreeToTerms: false,
 		subscribeNewsletter: false,
 	});
@@ -20,8 +21,21 @@ export default function RegisterPage() {
 	const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 	const [isLoading, setIsLoading] = useState(false);
 	const [passwordStrength, setPasswordStrength] = useState(0);
+	const [profileImage, setProfileImage] = useState<string | null>(null);
+	const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
 
-	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+	// Get display avatar (uploaded image or letter avatar)
+	const getDisplayAvatar = () => {
+		if (profileImage) {
+			return profileImage;
+		}
+		if (formData.firstName && formData.lastName) {
+			return generateLetterAvatar(formData.firstName, formData.lastName, 80);
+		}
+		return null;
+	};
+
+	const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
 		const { name, value, type } = e.target;
 		const checked = (e.target as HTMLInputElement).checked;
 		
@@ -34,6 +48,35 @@ export default function RegisterPage() {
 		if (name === "password") {
 			setPasswordStrength(calculatePasswordStrength(value));
 		}
+	};
+
+	const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (file) {
+			// Validate image file
+			const validation = validateImageFile(file);
+			if (!validation.valid) {
+				alert(validation.error);
+				return;
+			}
+
+			setProfileImageFile(file);
+
+			// Create preview
+			const reader = new FileReader();
+			reader.onload = () => {
+				setProfileImage(reader.result as string);
+			};
+			reader.readAsDataURL(file);
+		}
+	};
+
+	const removeImage = () => {
+		setProfileImage(null);
+		setProfileImageFile(null);
+		// Reset file input
+		const fileInput = document.getElementById('profileImage') as HTMLInputElement;
+		if (fileInput) fileInput.value = '';
 	};
 
 	const calculatePasswordStrength = (password: string) => {
@@ -83,13 +126,62 @@ export default function RegisterPage() {
 			return;
 		}
 
+		if (!formData.subscribeNewsletter) {
+			alert("Please subscribe to newsletter to receive updates about new books and library events!");
+			return;
+		}
+
+		if (!formData.username.trim()) {
+			alert("Username is required!");
+			return;
+		}
+
 		setIsLoading(true);
 		
-		// Simulate API call
-		await new Promise((resolve) => setTimeout(resolve, 2000));
-		
-		console.log("Registration data:", formData);
-		setIsLoading(false);
+		try {
+			// Generate letter avatar if no profile image uploaded
+			const finalProfileImage = profileImage || (formData.firstName && formData.lastName 
+				? generateLetterAvatar(formData.firstName, formData.lastName, 80) 
+				: null);
+
+			// Prepare registration data
+			const registrationData = {
+				email: formData.email,
+				password: formData.password,
+				firstName: formData.firstName,
+				lastName: formData.lastName,
+				username: formData.username,
+				phone: formData.phone || undefined,
+				address: formData.address || undefined,
+				profileImage: finalProfileImage || undefined
+			};
+
+			const response = await fetch('/api/auth/register', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify(registrationData)
+			});
+
+			const data = await response.json();
+
+			if (response.ok) {
+				// Store token and user data
+				localStorage.setItem('auth_token', data.token);
+				localStorage.setItem('user_data', JSON.stringify(data.user));
+				
+				alert('Registration successful! Redirecting to home...');
+				window.location.href = '/';
+			} else {
+				alert(data.error || 'Registration failed. Please try again.');
+			}
+		} catch (error) {
+			console.error('Registration error:', error);
+			alert('Registration failed. Please check your internet connection and try again.');
+		} finally {
+			setIsLoading(false);
+		}
 	};
 
 	return (
@@ -133,37 +225,61 @@ export default function RegisterPage() {
 					{/* Registration Form */}
 					<div className="p-8">
 						<form onSubmit={handleSubmit} className="space-y-6">
-							{/* User Type Selection */}
+							{/* Profile Image Upload */}
 							<div>
 								<label className="block text-sm font-semibold text-gray-800 mb-3">
-									Account Type
+									Profile Picture (Optional)
 								</label>
-								<div className="grid grid-cols-3 gap-3">
-									{[
-										{ value: "student", label: "Student", icon: "🎓" },
-										{ value: "faculty", label: "Faculty", icon: "👨‍🏫" },
-										{ value: "public", label: "Public", icon: "👥" },
-									].map((type) => (
+								<div className="flex items-center space-x-4">
+									<div className="flex-shrink-0">
+										{getDisplayAvatar() ? (
+											<div className="relative">
+												<img
+													src={getDisplayAvatar()!}
+													alt="Profile preview"
+													className="w-20 h-20 rounded-full object-cover border-2 border-gray-300"
+												/>
+												{profileImage && (
+													<button
+														type="button"
+														onClick={removeImage}
+														className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm hover:bg-red-600 transition-colors"
+													>
+														×
+													</button>
+												)}
+											</div>
+										) : (
+											<div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center border-2 border-dashed border-gray-300">
+												<svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+													<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+												</svg>
+											</div>
+										)}
+									</div>
+									<div className="flex-1">
+										<input
+											type="file"
+											id="profileImage"
+											accept="image/*"
+											onChange={handleImageChange}
+											className="hidden"
+										/>
 										<label
-											key={type.value}
-											className={`relative flex flex-col items-center p-4 border-2 rounded-xl cursor-pointer transition-all duration-200 ${
-												formData.userType === type.value
-													? "border-sky-500 bg-sky-50"
-													: "border-gray-200 hover:border-sky-300"
-											}`}
+											htmlFor="profileImage"
+											className="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 rounded-xl text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
 										>
-											<input
-												type="radio"
-												name="userType"
-												value={type.value}
-												checked={formData.userType === type.value}
-												onChange={handleInputChange}
-												className="sr-only"
-											/>
-											<span className="text-2xl mb-2">{type.icon}</span>
-											<span className="text-sm font-semibold text-gray-800">{type.label}</span>
+											<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+												<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+											</svg>
+											{profileImage ? 'Change Image' : 'Choose Image'}
 										</label>
-									))}
+										<p className="text-xs text-gray-500 mt-1">
+											{formData.firstName && formData.lastName && !profileImage 
+												? "Letter avatar will be generated if no image is selected" 
+												: "Max size: 5MB. Formats: JPG, PNG, GIF"}
+										</p>
+									</div>
 								</div>
 							</div>
 
@@ -225,11 +341,11 @@ export default function RegisterPage() {
 								</div>
 							</div>
 
-							{/* Phone and Student ID */}
+							{/* Contact Information */}
 							<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 								<div>
 									<label htmlFor="phone" className="block text-sm font-semibold text-gray-800 mb-2">
-										Phone Number
+										Phone Number (Optional)
 									</label>
 									<input
 										type="tel"
@@ -238,26 +354,40 @@ export default function RegisterPage() {
 										value={formData.phone}
 										onChange={handleInputChange}
 										className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
-										placeholder="Enter your phone"
+										placeholder="Enter your phone number"
 									/>
 								</div>
-								{formData.userType === "student" && (
-									<div>
-										<label htmlFor="studentId" className="block text-sm font-semibold text-gray-800 mb-2">
-											Student ID
-										</label>
-										<input
-											type="text"
-											id="studentId"
-											name="studentId"
-											value={formData.studentId}
-											onChange={handleInputChange}
-											className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
-											placeholder="Enter your student ID"
-											required
-										/>
-									</div>
-								)}
+								<div>
+									<label htmlFor="username" className="block text-sm font-semibold text-gray-800 mb-2">
+										Username
+									</label>
+									<input
+										type="text"
+										id="username"
+										name="username"
+										value={formData.username}
+										onChange={handleInputChange}
+										className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-500"
+										placeholder="Choose a username"
+										required
+									/>
+								</div>
+							</div>
+
+							{/* Address Field */}
+							<div>
+								<label htmlFor="address" className="block text-sm font-semibold text-gray-800 mb-2">
+									Address (Optional)
+								</label>
+								<textarea
+									id="address"
+									name="address"
+									value={formData.address}
+									onChange={handleInputChange}
+									rows={3}
+									className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all duration-200 bg-white text-gray-900 placeholder-gray-500 resize-none"
+									placeholder="Enter your address"
+								/>
 							</div>
 
 							{/* Password Fields */}
@@ -417,11 +547,13 @@ export default function RegisterPage() {
 											checked={formData.subscribeNewsletter}
 											onChange={handleInputChange}
 											className="h-4 w-4 text-sky-600 focus:ring-sky-500 border-gray-300 rounded"
+											required
 										/>
 									</div>
 									<div className="ml-3 text-sm">
 										<label htmlFor="subscribeNewsletter" className="text-gray-800">
-											I want to receive updates about new books and library events
+											<span className="text-red-500">*</span> I want to receive updates about new books and library events
+											<span className="block text-xs text-gray-500 mt-1">(Required to complete registration)</span>
 										</label>
 									</div>
 								</div>
@@ -430,7 +562,7 @@ export default function RegisterPage() {
 							{/* Submit Button */}
 							<button
 								type="submit"
-								disabled={isLoading}
+								disabled={isLoading || !formData.agreeToTerms || !formData.subscribeNewsletter}
 								className="w-full bg-gradient-to-r from-sky-600 to-indigo-600 text-white py-3 px-4 rounded-xl font-semibold hover:from-sky-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 transition-all duration-200 transform hover:scale-[1.02] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none"
 							>
 								{isLoading ? (
