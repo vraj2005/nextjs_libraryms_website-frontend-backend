@@ -3,6 +3,30 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
+
+interface Book {
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  isbn: string;
+  totalCopies: number;
+  availableCopies: number;
+  publishedYear?: number;
+  publisher?: string;
+  image?: string;
+  isActive: boolean;
+  isFeatured: boolean;
+  createdAt: string;
+  updatedAt: string;
+  category: {
+    id: string;
+    name: string;
+    description?: string;
+    image?: string;
+  };
+}
 
 const slides = [
   {
@@ -91,81 +115,48 @@ const categories = [
   }
 ];
 
-const featuredBooks = [
-  {
-    id: 1,
-    title: "The Great Library",
-    author: "Dr. Elena Richardson",
-    category: "Academic",
-    image: "/book-1.svg",
-    rating: 4.8,
-    status: "Available",
-    description: "A comprehensive guide to modern library science and information management.",
-    publishYear: 2023
-  },
-  {
-    id: 2,
-    title: "Digital Transformation",
-    author: "Prof. Michael Chen",
-    category: "Technology",
-    image: "/book-2.svg",
-    rating: 4.9,
-    status: "Available",
-    description: "Understanding the impact of digital technology on modern society.",
-    publishYear: 2024
-  },
-  {
-    id: 3,
-    title: "Research Methodology",
-    author: "Dr. Sarah Williams",
-    category: "Academic",
-    image: "/book-3.svg",
-    rating: 4.7,
-    status: "Reserved",
-    description: "Essential guide for academic research and scholarly writing.",
-    publishYear: 2023
-  },
-  {
-    id: 4,
-    title: "Modern Literature",
-    author: "James Patterson",
-    category: "Fiction",
-    image: "/book-4.svg",
-    rating: 4.6,
-    status: "Available",
-    description: "A collection of contemporary literary works and analysis.",
-    publishYear: 2024
-  },
-  {
-    id: 5,
-    title: "Data Science Fundamentals",
-    author: "Dr. Lisa Zhang",
-    category: "Technology",
-    image: "/book-5.svg",
-    rating: 4.9,
-    status: "Available",
-    description: "Complete guide to data science, analytics, and machine learning.",
-    publishYear: 2024
-  },
-  {
-    id: 6,
-    title: "Environmental Studies",
-    author: "Prof. David Green",
-    category: "Science",
-    image: "/book-6.svg",
-    rating: 4.5,
-    status: "Checked Out",
-    description: "Comprehensive study of environmental science and sustainability.",
-    publishYear: 2023
-  }
-];
-
 export default function HomePage() {
+  const { user } = useAuth();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [favorites, setFavorites] = useState<number[]>([]);
+  const [favorites, setFavorites] = useState<string[]>([]);
   const [realCategories, setRealCategories] = useState<any[]>([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
+  const [featuredBooksLoading, setFeaturedBooksLoading] = useState(true);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [showBorrowModal, setShowBorrowModal] = useState(false);
+  const [borrowReason, setBorrowReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  // Load favorites from localStorage
+  useEffect(() => {
+    const savedFavorites = localStorage.getItem('favorites');
+    if (savedFavorites) {
+      setFavorites(JSON.parse(savedFavorites));
+    }
+  }, []);
+
+  // Fetch featured books from API
+  const fetchFeaturedBooks = async () => {
+    try {
+      setFeaturedBooksLoading(true);
+      const response = await fetch('/api/books?featured=true&limit=6');
+      if (response.ok) {
+        const data = await response.json();
+        setFeaturedBooks(data.books || []);
+      } else {
+        console.error('Failed to fetch featured books');
+        setFeaturedBooks([]);
+      }
+    } catch (error) {
+      console.error('Error fetching featured books:', error);
+      setFeaturedBooks([]);
+    } finally {
+      setFeaturedBooksLoading(false);
+    }
+  };
 
   // Fetch real categories with book counts
   const fetchCategories = async () => {
@@ -249,9 +240,11 @@ export default function HomePage() {
     
     // Fetch real categories from API
     fetchCategories();
+    // Fetch featured books from API
+    fetchFeaturedBooks();
   }, []);
 
-  const toggleFavorite = (bookId: number) => {
+  const toggleFavorite = (bookId: string) => {
     const updatedFavorites = favorites.includes(bookId)
       ? favorites.filter(id => id !== bookId)
       : [...favorites, bookId];
@@ -270,8 +263,60 @@ export default function HomePage() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle search functionality
-    console.log("Searching for:", searchQuery);
+    // Redirect to books page with search query
+    if (searchQuery.trim()) {
+      window.location.href = `/books?search=${encodeURIComponent(searchQuery.trim())}`;
+    } else {
+      window.location.href = '/books';
+    }
+  };
+
+  const openBookModal = (book: Book) => {
+    setSelectedBook(book);
+    setShowBookModal(true);
+  };
+
+  const closeBookModal = () => {
+    setShowBookModal(false);
+    setSelectedBook(null);
+  };
+
+  const requestBorrow = async () => {
+    if (!user || !selectedBook) return;
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+
+      const response = await fetch('/api/borrow-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          bookId: selectedBook.id,
+          notes: borrowReason
+        })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert('Borrow request submitted successfully!');
+        setShowBorrowModal(false);
+        setBorrowReason('');
+        // Refresh featured books to update availability
+        fetchFeaturedBooks();
+      } else {
+        alert(data.error || 'Failed to submit borrow request');
+      }
+    } catch (error) {
+      console.error('Error submitting borrow request:', error);
+      alert('Failed to submit borrow request');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -477,88 +522,167 @@ export default function HomePage() {
               Discover our handpicked selection of must-read books and latest additions
             </p>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-            {featuredBooks.map((book) => (
-              <div
-                key={book.id}
-                className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 border border-sky-100"
+          
+          {featuredBooksLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {[...Array(6)].map((_, index) => (
+                <div
+                  key={index}
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl border border-blue-100 animate-pulse"
+                >
+                  <div className="h-64 bg-gray-300"></div>
+                  <div className="p-6">
+                    <div className="h-4 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-6 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-4 bg-gray-300 rounded mb-4"></div>
+                    <div className="h-3 bg-gray-300 rounded mb-2"></div>
+                    <div className="h-10 bg-gray-300 rounded"></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : featuredBooks.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">📚</div>
+              <h3 className="text-xl font-semibold text-gray-700 mb-2">No Featured Books</h3>
+              <p className="text-gray-500 mb-6">No books are currently featured. Check back later!</p>
+              <Link
+                href="/books"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-sky-600 to-sky-700 hover:from-sky-700 hover:to-sky-800 text-white font-bold py-3 px-6 rounded-full transition-all duration-300 transform hover:scale-105 shadow-xl"
               >
-                <div className="relative h-56 md:h-64 lg:h-72">
-                  <Image
-                    src={book.image}
-                    alt={book.title}
-                    fill
-                    className="object-contain bg-gray-50"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                  />
-                  <div className="absolute top-4 right-4">
-                    <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        book.status === "Available"
-                          ? "bg-green-100 text-green-800"
-                          : book.status === "Reserved"
-                          ? "bg-yellow-100 text-yellow-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {book.status}
-                    </span>
-                  </div>
-                </div>
-                <div className="p-4 md:p-6">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-sky-600 text-xs md:text-sm font-medium bg-sky-100 px-2 py-1 rounded-full">
-                      {book.category}
-                    </span>
-                    <span className="text-gray-500 text-xs md:text-sm">{book.publishYear}</span>
-                  </div>
-                  <h3 className="text-lg md:text-xl font-bold text-sky-800 mb-2 line-clamp-2">
-                    {book.title}
-                  </h3>
-                  <p className="text-sky-600 mb-2 text-sm md:text-base">by {book.author}</p>
-                  <p className="text-gray-600 text-sm mb-4 line-clamp-2">{book.description}</p>
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1">
-                      <svg className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                      </svg>
-                      <span className="text-gray-700 font-semibold text-sm md:text-base">{book.rating}</span>
-                    </div>
-                    <button
-                      className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
-                        book.status === "Available"
-                          ? "bg-sky-600 hover:bg-sky-700 text-white"
-                          : book.status === "Reserved"
-                          ? "bg-yellow-600 hover:bg-yellow-700 text-white"
-                          : "bg-gray-400 text-gray-200 cursor-not-allowed"
-                      }`}
-                      disabled={book.status === "Checked Out"}
-                    >
-                      {book.status === "Available" ? "Borrow" : book.status === "Reserved" ? "Join Queue" : "Unavailable"}
-                    </button>
-                  </div>
-                  <div className="flex justify-center mt-4 pt-4 border-t border-gray-100">
-                    <button
-                      onClick={() => toggleFavorite(book.id)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-full transition-all duration-200 ${
-                        favorites.includes(book.id)
-                          ? "bg-red-500 text-white hover:bg-red-600"
-                          : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
-                      }`}
-                      aria-label={favorites.includes(book.id) ? "Remove from favorites" : "Add to favorites"}
-                    >
-                      <svg className="w-4 h-4" fill={favorites.includes(book.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                      </svg>
-                      <span className="text-sm font-medium">
-                        {favorites.includes(book.id) ? "Favorited" : "Add to Favorites"}
+                Browse All Books
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                </svg>
+              </Link>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
+              {featuredBooks.map((book) => (
+                <div
+                  key={book.id}
+                  className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100 group cursor-pointer flex flex-col h-full"
+                  onClick={() => openBookModal(book)}
+                >
+                  <div className="relative h-56 md:h-64 flex-shrink-0">
+                    <Image
+                      src={book.image || '/book-placeholder.jpg'}
+                      alt={book.title}
+                      fill
+                      className="object-contain bg-gradient-to-br from-blue-50 to-indigo-50"
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement
+                        target.src = '/book-placeholder.jpg'
+                      }}
+                    />
+                    <div className="absolute top-4 right-4">
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          book.availableCopies > 0
+                            ? "bg-green-100 text-green-800"
+                            : "bg-red-100 text-red-800"
+                        }`}
+                      >
+                        {book.availableCopies > 0 ? "Available" : "Not Available"}
                       </span>
-                    </button>
+                    </div>
+                    <div className="absolute bottom-4 right-4">
+                      <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1">
+                        <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                          <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-xs font-semibold text-gray-700">{book.availableCopies}/{book.totalCopies}</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="p-4 md:p-6 flex flex-col flex-grow">
+                    <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+                      <span className="text-blue-600 text-xs md:text-sm font-medium bg-blue-100 px-2 py-1 rounded-full truncate">
+                        {book.category.name}
+                      </span>
+                      <span className="text-gray-500 text-xs md:text-sm flex-shrink-0">{book.publishedYear}</span>
+                    </div>
+                    
+                    <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors flex-shrink-0" 
+                        title={book.title}>
+                      {book.title}
+                    </h3>
+                    <p className="text-gray-600 mb-2 text-sm md:text-base flex-shrink-0 truncate" title={`by ${book.author}`}>
+                      by {book.author}
+                    </p>
+                    <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow" title={book.description}>
+                      {book.description}
+                    </p>
+                    
+                    <div className="space-y-3 flex-shrink-0">
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <span className="truncate" title={`ISBN: ${book.isbn}`}>ISBN: {book.isbn}</span>
+                        <span className="truncate text-right" title={book.publisher || 'Unknown Publisher'}>
+                          {book.publisher || 'Unknown Publisher'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Available: {book.availableCopies}/{book.totalCopies}</span>
+                        <span className="font-semibold text-blue-600">
+                          {book.availableCopies > 0 ? 'In Stock' : 'Out of Stock'}
+                        </span>
+                      </div>
+                      
+                      <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                        {user ? (
+                          <>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedBook(book);
+                                setShowBorrowModal(true);
+                              }}
+                              disabled={book.availableCopies === 0}
+                              className={`w-full px-4 py-2 rounded-full font-medium transition-all duration-200 flex-shrink-0 ${
+                                book.availableCopies > 0
+                                  ? "bg-blue-600 text-white hover:bg-blue-700"
+                                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                              }`}
+                            >
+                              {book.availableCopies > 0 ? 'Request to Borrow' : 'Not Available'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(book.id);
+                              }}
+                              className={`w-full px-4 py-2 rounded-full font-medium transition-all duration-200 flex items-center justify-center gap-2 ${
+                                favorites.includes(book.id)
+                                  ? "bg-red-500 text-white hover:bg-red-600"
+                                  : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
+                              }`}
+                            >
+                              <svg className="w-4 h-4" fill={favorites.includes(book.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                              </svg>
+                              {favorites.includes(book.id) ? 'Favorited' : 'Add to Favorites'}
+                            </button>
+                          </>
+                        ) : (
+                          <Link
+                            href="/login"
+                            className="w-full px-4 py-2 rounded-full font-medium bg-blue-600 text-white hover:bg-blue-700 transition-all duration-200 text-center"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            Login to Borrow
+                          </Link>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
+          
           <div className="text-center mt-8 md:mt-12">
             <Link
               href="/books"
@@ -572,6 +696,149 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      {/* Book Details Modal */}
+      {showBookModal && selectedBook && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-2xl font-bold text-gray-800">Book Details</h2>
+                <button
+                  onClick={closeBookModal}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="relative h-64 md:h-80">
+                  <Image
+                    src={selectedBook.image || '/book-placeholder.jpg'}
+                    alt={selectedBook.title}
+                    fill
+                    className="object-contain bg-gray-50 rounded-lg"
+                  />
+                </div>
+                
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800 mb-2">{selectedBook.title}</h3>
+                  <p className="text-gray-600 mb-4">by {selectedBook.author}</p>
+                  
+                  <div className="space-y-2 text-sm">
+                    <div><strong>Category:</strong> {selectedBook.category.name}</div>
+                    <div><strong>ISBN:</strong> {selectedBook.isbn}</div>
+                    <div><strong>Publisher:</strong> {selectedBook.publisher || 'Unknown'}</div>
+                    <div><strong>Published Year:</strong> {selectedBook.publishedYear || 'Unknown'}</div>
+                    <div><strong>Available:</strong> {selectedBook.availableCopies}/{selectedBook.totalCopies}</div>
+                  </div>
+                  
+                  <div className="mt-4">
+                    <h4 className="font-semibold text-gray-800 mb-2">Description</h4>
+                    <p className="text-gray-600 text-sm">{selectedBook.description || 'No description available.'}</p>
+                  </div>
+                  
+                  <div className="mt-6 space-y-3">
+                    {user ? (
+                      <>
+                        <button
+                          onClick={() => {
+                            setShowBookModal(false);
+                            setShowBorrowModal(true);
+                          }}
+                          disabled={selectedBook.availableCopies === 0}
+                          className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                            selectedBook.availableCopies > 0
+                              ? "bg-blue-600 text-white hover:bg-blue-700"
+                              : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                          }`}
+                        >
+                          {selectedBook.availableCopies > 0 ? 'Request to Borrow' : 'Not Available'}
+                        </button>
+                        <button
+                          onClick={() => toggleFavorite(selectedBook.id)}
+                          className={`w-full px-4 py-2 rounded-lg font-medium transition-colors flex items-center justify-center gap-2 ${
+                            favorites.includes(selectedBook.id)
+                              ? "bg-red-500 text-white hover:bg-red-600"
+                              : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill={favorites.includes(selectedBook.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                          </svg>
+                          {favorites.includes(selectedBook.id) ? 'Remove from Favorites' : 'Add to Favorites'}
+                        </button>
+                      </>
+                    ) : (
+                      <Link
+                        href="/login"
+                        className="block w-full px-4 py-2 rounded-lg font-medium bg-blue-600 text-white hover:bg-blue-700 transition-colors text-center"
+                      >
+                        Login to Borrow
+                      </Link>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Borrow Request Modal */}
+      {showBorrowModal && selectedBook && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-start mb-4">
+                <h2 className="text-xl font-bold text-gray-800">Request to Borrow</h2>
+                <button
+                  onClick={() => setShowBorrowModal(false)}
+                  className="text-gray-500 hover:text-gray-700 text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+              
+              <div className="mb-4">
+                <h3 className="font-semibold text-gray-800">{selectedBook.title}</h3>
+                <p className="text-gray-600 text-sm">by {selectedBook.author}</p>
+              </div>
+              
+              <div className="mb-4">
+                <label htmlFor="borrowReason" className="block text-sm font-medium text-gray-700 mb-2">
+                  Reason for borrowing (optional)
+                </label>
+                <textarea
+                  id="borrowReason"
+                  value={borrowReason}
+                  onChange={(e) => setBorrowReason(e.target.value)}
+                  placeholder="e.g., Research, Assignment, Personal reading..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  rows={3}
+                />
+              </div>
+              
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowBorrowModal(false)}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={requestBorrow}
+                  disabled={submitting}
+                  className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {submitting ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
