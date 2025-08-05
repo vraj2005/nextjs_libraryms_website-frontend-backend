@@ -67,6 +67,11 @@ export default function Profile() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   
+  // Profile image upload state
+  const [profileImageFile, setProfileImageFile] = useState<File | null>(null);
+  const [profileImagePreview, setProfileImagePreview] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  
   // Password change state
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -255,6 +260,47 @@ export default function Profile() {
     return Object.keys(errors).length === 0;
   };
 
+  // Handle profile image upload
+  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setFormErrors({...formErrors, profileImage: 'Please select a valid image file'});
+        return;
+      }
+      
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        setFormErrors({...formErrors, profileImage: 'Image size must be less than 5MB'});
+        return;
+      }
+      
+      setProfileImageFile(file);
+      
+      // Create preview URL
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setProfileImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+      
+      // Clear any existing error
+      if (formErrors.profileImage) {
+        setFormErrors({...formErrors, profileImage: ''});
+      }
+    }
+  };
+
+  // Remove profile image
+  const handleRemoveImage = () => {
+    setProfileImageFile(null);
+    setProfileImagePreview(null);
+    if (editedProfile) {
+      setEditedProfile({...editedProfile, profileImage: ''});
+    }
+  };
+
   const handleSaveProfile = async () => {
     if (!validateForm() || !editedProfile || !userProfile) {
       return;
@@ -263,6 +309,41 @@ export default function Profile() {
     setIsSaving(true);
     
     try {
+      let profileImageUrl = editedProfile.profileImage || '';
+      
+      // Upload profile image if a new one was selected
+      if (profileImageFile) {
+        setUploadingImage(true);
+        
+        const formData = new FormData();
+        formData.append('profileImage', profileImageFile);
+        
+        try {
+          const uploadResponse = await fetch('/api/profile/upload-image', {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token') || localStorage.getItem('token')}`
+            },
+            body: formData
+          });
+          
+          if (uploadResponse.ok) {
+            const uploadResult = await uploadResponse.json();
+            profileImageUrl = uploadResult.imageUrl;
+          } else {
+            throw new Error('Failed to upload image');
+          }
+        } catch (uploadError) {
+          console.error('Error uploading image:', uploadError);
+          setFormErrors({general: 'Failed to upload profile image. Please try again.'});
+          setUploadingImage(false);
+          setIsSaving(false);
+          return;
+        } finally {
+          setUploadingImage(false);
+        }
+      }
+      
       // API call to update profile
       const response = await fetch('/api/profile', {
         method: 'PUT',
@@ -275,7 +356,8 @@ export default function Profile() {
           lastName: editedProfile.lastName,
           email: editedProfile.email,
           phone: editedProfile.phone,
-          address: editedProfile.address
+          address: editedProfile.address,
+          profileImage: profileImageUrl
         })
       });
       
@@ -290,12 +372,17 @@ export default function Profile() {
           email: editedProfile.email,
           phone: editedProfile.phone,
           address: editedProfile.address,
+          profileImage: profileImageUrl,
           name: `${editedProfile.firstName} ${editedProfile.lastName}`,
           updatedAt: new Date().toISOString()
         };
         
         setUserProfile(updatedProfile);
         setEditedProfile(updatedProfile);
+        
+        // Clear image upload state
+        setProfileImageFile(null);
+        setProfileImagePreview(null);
         
         // Update the AuthContext so navbar reflects changes
         updateUser({
@@ -360,6 +447,10 @@ export default function Profile() {
     }
     setIsEditing(false);
     setFormErrors({});
+    
+    // Clear image upload state
+    setProfileImageFile(null);
+    setProfileImagePreview(null);
   };
 
   const validatePasswordForm = () => {
@@ -776,6 +867,64 @@ export default function Profile() {
                   )}
                   
                   <div className="space-y-6">
+                    {/* Profile Image Upload Section */}
+                    {isEditing && (
+                      <div className="flex justify-center mb-8">
+                        <div className="flex flex-col items-center">
+                          <label className="block text-sm font-medium text-gray-800 mb-4">Profile Picture</label>
+                          <div className="relative">
+                            <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white shadow-lg bg-gradient-to-br from-sky-100 to-blue-100">
+                              <Image
+                                src={profileImagePreview || getDisplayAvatar() || '/default-avatar.png'}
+                                alt="Profile"
+                                width={128}
+                                height={128}
+                                className="w-full h-full object-cover"
+                              />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                className="hidden"
+                                id="profile-image-upload"
+                              />
+                              <label
+                                htmlFor="profile-image-upload"
+                                className="flex items-center justify-center w-10 h-10 bg-sky-600 text-white rounded-full cursor-pointer hover:bg-sky-700 transition-colors shadow-lg"
+                              >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                              </label>
+                            </div>
+                          </div>
+                          <div className="mt-4 space-y-2">
+                            {(profileImagePreview || userProfile?.profileImage) && (
+                              <button
+                                type="button"
+                                onClick={handleRemoveImage}
+                                className="text-red-600 hover:text-red-700 text-sm font-medium flex items-center gap-1"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                                Remove Photo
+                              </button>
+                            )}
+                            <p className="text-xs text-gray-500 text-center">
+                              JPG, PNG or GIF • Max 5MB
+                            </p>
+                          </div>
+                          {formErrors.profileImage && (
+                            <p className="mt-2 text-sm text-red-600 text-center">{formErrors.profileImage}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-800 mb-2">First Name</label>
@@ -927,20 +1076,20 @@ export default function Profile() {
                       <div className="flex gap-4">
                         <button
                           onClick={handleSaveProfile}
-                          disabled={isSaving}
+                          disabled={isSaving || uploadingImage}
                           className="px-6 py-3 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                          {isSaving && (
+                          {(isSaving || uploadingImage) && (
                             <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                             </svg>
                           )}
-                          {isSaving ? 'Saving...' : 'Save Changes'}
+                          {uploadingImage ? 'Uploading Image...' : isSaving ? 'Saving...' : 'Save Changes'}
                         </button>
                         <button
                           onClick={handleCancelEdit}
-                          disabled={isSaving}
+                          disabled={isSaving || uploadingImage}
                           className="px-6 py-3 border-2 border-gray-300 text-gray-700 rounded-xl font-semibold hover:bg-gray-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           Cancel
