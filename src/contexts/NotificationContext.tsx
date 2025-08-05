@@ -22,6 +22,12 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
       return;
     }
 
+    // Skip notification fetching for admin/librarian users since they have their own notification system
+    if (user.role === 'ADMIN' || user.role === 'LIBRARIAN') {
+      setUnreadCount(0);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) return;
