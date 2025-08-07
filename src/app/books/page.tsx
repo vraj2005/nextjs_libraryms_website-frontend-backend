@@ -48,6 +48,7 @@ export default function BooksPage() {
   const { user } = useAuth()
   const { fetchUnreadCount } = useNotifications()
   const [books, setBooks] = useState<Book[]>([])
+  const [imageErrors, setImageErrors] = useState<{[key: string]: boolean}>({})
   const [categories, setCategories] = useState<Category[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -170,6 +171,13 @@ export default function BooksPage() {
     
     setFavorites(updatedFavorites)
     localStorage.setItem('favorites', JSON.stringify(updatedFavorites))
+  }
+
+  const handleImageError = (bookId: string) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [bookId]: true
+    }))
   }
 
   const handleBorrowRequest = async () => {
@@ -462,18 +470,37 @@ export default function BooksPage() {
                     className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100 group cursor-pointer flex flex-col h-full"
                     onClick={() => openBookModal(book)}
                   >
-                    <div className="relative h-56 md:h-64 flex-shrink-0">
-                      <Image
-                        src={book.image || '/book-placeholder.jpg'}
-                        alt={book.title}
-                        fill
-                        className="object-contain bg-gradient-to-br from-blue-50 to-indigo-50"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                        onError={(e) => {
-                          const target = e.target as HTMLImageElement
-                          target.src = '/book-placeholder.jpg'
-                        }}
-                      />
+                    <div className="relative h-56 md:h-64 flex-shrink-0 bg-gradient-to-br from-blue-50 to-indigo-100">
+                      {book.image && 
+                       book.image !== "/book-1.svg" && 
+                       !imageErrors[book.id] ? (
+                        <Image
+                          src={book.image}
+                          alt={book.title}
+                          fill
+                          className="object-contain p-4"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                          onError={() => handleImageError(book.id)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                          {/* Book Icon */}
+                          <div className="w-20 h-28 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg flex items-center justify-center mb-4">
+                            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                          </div>
+                          
+                          {/* Book Title */}
+                          <h4 className="text-sm font-semibold text-gray-700 mb-1 text-center overflow-hidden" style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            textOverflow: 'ellipsis'
+                          }}>{book.title}</h4>
+                          <p className="text-xs text-gray-500 text-center">{book.author}</p>
+                        </div>
+                      )}
                       <div className="absolute top-4 right-4">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -653,14 +680,32 @@ export default function BooksPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                   {/* Book Image */}
                   <div className="lg:col-span-1">
-                    <div className="relative h-80 lg:h-96 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-2xl overflow-hidden shadow-lg">
-                      <Image
-                        src={selectedBook!.image || '/book-placeholder.jpg'}
-                        alt={selectedBook!.title}
-                        fill
-                        className="object-contain"
-                        sizes="(max-width: 1024px) 100vw, 33vw"
-                      />
+                    <div className="relative h-80 lg:h-96 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl overflow-hidden shadow-lg">
+                      {selectedBook!.image && 
+                       selectedBook!.image !== "/book-1.svg" && 
+                       !imageErrors[selectedBook!.id] ? (
+                        <Image
+                          src={selectedBook!.image}
+                          alt={selectedBook!.title}
+                          fill
+                          className="object-contain p-4"
+                          sizes="(max-width: 1024px) 100vw, 33vw"
+                          onError={() => handleImageError(selectedBook!.id)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                          {/* Large Book Icon */}
+                          <div className="w-32 h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-xl flex items-center justify-center mb-6">
+                            <svg className="w-20 h-20 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                          </div>
+                          
+                          {/* Book Title and Author */}
+                          <h4 className="text-lg font-semibold text-gray-700 mb-2 text-center">{selectedBook!.title}</h4>
+                          <p className="text-sm text-gray-500 text-center">by {selectedBook!.author}</p>
+                        </div>
+                      )}
                     </div>
                     
                     {/* Availability Status */}
