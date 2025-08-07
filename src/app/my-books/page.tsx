@@ -79,6 +79,11 @@ export default function MyBooksPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [filter, setFilter] = useState<'all' | 'active' | 'overdue' | 'returned'>('all')
+  const [showReturnModal, setShowReturnModal] = useState(false)
+  const [selectedBook, setSelectedBook] = useState<MyBook | null>(null)
+  const [returningBook, setReturningBook] = useState(false)
+  const [returnCondition, setReturnCondition] = useState('Good')
+  const [returnNotes, setReturnNotes] = useState('')
 
   const fetchMyBooks = async () => {
     try {
@@ -125,6 +130,55 @@ export default function MyBooksPage() {
       setError('Please log in to view your books')
     }
   }, [user, token, authLoading])
+
+  const handleReturnClick = (book: MyBook) => {
+    setSelectedBook(book)
+    setShowReturnModal(true)
+    setReturnCondition('Good')
+    setReturnNotes('')
+  }
+
+  const handleReturnBook = async () => {
+    if (!selectedBook || !token) return
+
+    setReturningBook(true)
+    try {
+      const response = await fetch('/api/books/return', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          requestId: selectedBook.id,
+          condition: returnCondition,
+          notes: returnNotes
+        })
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to return book')
+      }
+
+      // Refresh the books list
+      await fetchMyBooks()
+      
+      // Close modal and reset state
+      setShowReturnModal(false)
+      setSelectedBook(null)
+      setReturnCondition('Good')
+      setReturnNotes('')
+      
+      // Show success message
+      setError('')
+    } catch (err: any) {
+      console.error('Error returning book:', err)
+      setError(err.message || 'Failed to return book')
+    } finally {
+      setReturningBook(false)
+    }
+  }
 
   const getFilteredBooks = () => {
     return myBooks.filter(book => {
@@ -394,12 +448,131 @@ export default function MyBooksPage() {
                       })()}
                     </div>
                   )}
+
+                  {/* Return Book Button - Only show for active books */}
+                  {myBook.status === 'APPROVED' && (
+                    <div className="mt-4 pt-3 border-t border-gray-100">
+                      <button
+                        onClick={() => handleReturnClick(myBook)}
+                        disabled={returningBook}
+                        className="w-full bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 
+                                   text-white px-4 py-2 rounded-xl font-medium transition-all duration-200 
+                                   transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed 
+                                   disabled:hover:scale-100 shadow-lg hover:shadow-xl"
+                      >
+                        {returningBook ? 'Processing...' : 'Return Book'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Return Book Modal */}
+      {showReturnModal && selectedBook && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full mx-4 max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-900">Return Book</h3>
+                <button
+                  onClick={() => setShowReturnModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Book Info */}
+              <div className="mb-6 p-4 bg-gray-50 rounded-xl">
+                <div className="flex items-center gap-4">
+                  {selectedBook.book.image ? (
+                    <img
+                      src={selectedBook.book.image}
+                      alt={selectedBook.book.title}
+                      className="w-16 h-20 object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="w-16 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
+                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-gray-900 mb-1">{selectedBook.book.title}</h4>
+                    <p className="text-sm text-gray-600">by {selectedBook.book.author}</p>
+                    {selectedBook.dueDate && (
+                      <p className="text-sm text-gray-500 mt-1">
+                        Due: {new Date(selectedBook.dueDate).toLocaleDateString()}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Book Condition */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Book Condition
+                </label>
+                <select
+                  value={returnCondition}
+                  onChange={(e) => setReturnCondition(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                >
+                  <option value="Good">Good - No visible damage</option>
+                  <option value="Fair">Fair - Minor wear and tear</option>
+                  <option value="Damaged">Damaged - Significant damage</option>
+                </select>
+              </div>
+
+              {/* Notes */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Additional Notes (Optional)
+                </label>
+                <textarea
+                  value={returnNotes}
+                  onChange={(e) => setReturnNotes(e.target.value)}
+                  placeholder="Any comments about the book condition or return..."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none h-20"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowReturnModal(false)}
+                  disabled={returningBook}
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleReturnBook}
+                  disabled={returningBook}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {returningBook ? (
+                    <>
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    'Confirm Return'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

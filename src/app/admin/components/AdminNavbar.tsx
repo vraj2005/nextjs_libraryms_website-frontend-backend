@@ -41,7 +41,7 @@ export default function AdminNavbar() {
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <span className="hidden sm:inline text-sm text-gray-700 font-medium">{user?.name || user?.email}</span>
+            <span className="hidden sm:inline text-sm text-gray-700 font-medium">{user?.email}</span>
             <button
               onClick={() => {
                 localStorage.removeItem("auth_token");
