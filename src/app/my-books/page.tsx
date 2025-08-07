@@ -84,6 +84,14 @@ export default function MyBooksPage() {
   const [returningBook, setReturningBook] = useState(false)
   const [returnCondition, setReturnCondition] = useState('Good')
   const [returnNotes, setReturnNotes] = useState('')
+  const [imageErrors, setImageErrors] = useState<{[key: string]: boolean}>({})
+
+  const handleImageError = (bookId: string) => {
+    setImageErrors(prev => ({
+      ...prev,
+      [bookId]: true
+    }))
+  }
 
   const fetchMyBooks = async () => {
     try {
@@ -327,22 +335,37 @@ export default function MyBooksPage() {
             </a>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredBooks.map((myBook) => (
-              <div key={myBook.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+              <div key={myBook.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300 transform hover:-translate-y-1">
                 {/* Book Image */}
-                <div className="relative w-full h-64 bg-gradient-to-br from-gray-100 to-gray-200 overflow-hidden">
-                  {myBook.book.image ? (
+                <div className="relative w-full h-80 bg-gradient-to-br from-blue-50 to-indigo-100 overflow-hidden rounded-t-xl">
+                  {myBook.book.image && 
+                   myBook.book.image !== "/book-1.svg" && 
+                   !imageErrors[myBook.bookId] ? (
                     <img
                       src={myBook.book.image}
                       alt={myBook.book.title}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      className="w-full h-full object-contain hover:scale-105 transition-transform duration-300 p-4"
+                      onError={() => handleImageError(myBook.bookId)}
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <svg className="w-20 h-20 text-gray-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                      </svg>
+                    <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                      {/* Book Icon */}
+                      <div className="w-24 h-32 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg flex items-center justify-center mb-4">
+                        <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                      </div>
+                      
+                      {/* Book Title and Author */}
+                      <h4 className="text-sm font-semibold text-gray-700 mb-1 text-center overflow-hidden" style={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        textOverflow: 'ellipsis'
+                      }}>{myBook.book.title}</h4>
+                      <p className="text-xs text-gray-500 text-center">{myBook.book.author}</p>
                     </div>
                   )}
                 </div>
@@ -357,11 +380,23 @@ export default function MyBooksPage() {
                   </div>
 
                   {/* Book Details */}
-                  <h3 className="text-lg font-bold text-gray-900 mb-2 line-clamp-2">{myBook.book.title}</h3>
+                  <h3 className="text-lg font-bold text-gray-900 mb-2 leading-tight" style={{
+                    display: '-webkit-box',
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: 'vertical',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis'
+                  }}>{myBook.book.title}</h3>
                   <p className="text-gray-600 text-sm mb-3">by {myBook.book.author}</p>
                   
                   {myBook.book.description && (
-                    <p className="text-gray-600 text-sm mb-4 line-clamp-3">{myBook.book.description}</p>
+                    <p className="text-gray-600 text-sm mb-4 leading-relaxed" style={{
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis'
+                    }}>{myBook.book.description}</p>
                   )}
 
                   {/* Dates */}
@@ -489,27 +524,40 @@ export default function MyBooksPage() {
               </div>
 
               {/* Book Info */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center gap-4">
-                  {selectedBook.book.image ? (
-                    <img
-                      src={selectedBook.book.image}
-                      alt={selectedBook.book.title}
-                      className="w-16 h-20 object-cover rounded-lg"
-                    />
+              <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                <div className="flex items-start gap-4">
+                  {selectedBook.book.image && 
+                   selectedBook.book.image !== "/book-1.svg" && 
+                   !imageErrors[selectedBook.bookId] ? (
+                    <div className="w-20 h-28 bg-white rounded-lg shadow-md overflow-hidden flex-shrink-0">
+                      <img
+                        src={selectedBook.book.image}
+                        alt={selectedBook.book.title}
+                        className="w-full h-full object-contain p-1"
+                        onError={() => handleImageError(selectedBook.bookId)}
+                      />
+                    </div>
                   ) : (
-                    <div className="w-16 h-20 bg-gray-200 rounded-lg flex items-center justify-center">
-                      <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    <div className="w-20 h-28 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-md flex items-center justify-center flex-shrink-0">
+                      <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
                       </svg>
                     </div>
                   )}
+                  
                   <div className="flex-1 min-w-0">
                     <h4 className="font-semibold text-gray-900 mb-1">{selectedBook.book.title}</h4>
                     <p className="text-sm text-gray-600">by {selectedBook.book.author}</p>
+                    <p className="text-xs text-blue-600 mt-1">
+                      {selectedBook.book.category.name}
+                    </p>
                     {selectedBook.dueDate && (
                       <p className="text-sm text-gray-500 mt-1">
-                        Due: {new Date(selectedBook.dueDate).toLocaleDateString()}
+                        Due: {new Date(selectedBook.dueDate).toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric'
+                        })}
                       </p>
                     )}
                   </div>
