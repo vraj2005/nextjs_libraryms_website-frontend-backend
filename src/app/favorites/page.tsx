@@ -4,6 +4,30 @@ import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useAuth } from "@/contexts/AuthContext";
+import { useNotifications } from "@/contexts/NotificationContext";
+
+interface Book {
+  id: string;
+  title: string;
+  author: string;
+  description?: string;
+  isbn: string;
+  totalCopies: number;
+  availableCopies: number;
+  publishedYear?: number;
+  publisher?: string;
+  image?: string;
+  rating?: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+  category: {
+    id: string;
+    name: string;
+    description?: string;
+    image?: string;
+  };
+}
 
 // Sample books data (in a real app, this would come from an API or database)
 const allBooks = [
@@ -151,13 +175,20 @@ const allBooks = [
 
 export default function FavoritesPage() {
   const { user } = useAuth();
-  const [favorites, setFavorites] = useState<string[] | number[]>([]);
-  const [favoriteBooks, setFavoriteBooks] = useState<any[]>([]);
+  const { fetchUnreadCount } = useNotifications();
+  const [favorites, setFavorites] = useState<string[]>([]);
+  const [favoriteBooks, setFavoriteBooks] = useState<Book[]>([]);
+  const [imageErrors, setImageErrors] = useState<{ [key: string]: boolean }>({});
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+  const [showBookModal, setShowBookModal] = useState(false);
+  const [showBorrowModal, setShowBorrowModal] = useState(false);
+  const [borrowReason, setBorrowReason] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [sortBy, setSortBy] = useState<"title" | "author" | "rating" | "year">("title");
   const [filterBy, setFilterBy] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Load favorites: for authenticated users from API, else from local
+  // Load favorites: server for logged-in users, else local fallback
   useEffect(() => {
     const load = async () => {
       try {
@@ -167,111 +198,202 @@ export default function FavoritesPage() {
           });
           if (resp.ok) {
             const data = await resp.json();
-            const books = (data.favorites || []).map((f: any) => f.book).filter(Boolean);
-            const mapped = books.map((b: any) => ({
-              id: b.id,
-              title: b.title,
-              author: b.author,
-              description: b.description || '',
-              image: b.image || '/book-1.svg',
-              category: b.category?.name || 'Unknown',
-              rating: 4.8,
-              status: (b.availableCopies ?? 0) > 0 ? 'Available' : 'Checked Out',
-              publishYear: b.publishedYear || new Date(b.createdAt ?? Date.now()).getFullYear(),
-              isbn: b.isbn,
-              pages: b.pages ?? 0,
-              language: b.language ?? 'English'
-            }));
-            setFavoriteBooks(mapped);
-            setFavorites(mapped.map((b: any) => b.id));
+            const books: Book[] = (data.favorites || []).map((f: any) => f.book).filter(Boolean);
+            setFavoriteBooks(books);
+            setFavorites(books.map((b) => b.id));
           } else {
-            // fallback to local
+            // fallback to local: map sample data to Book-like entries
             const saved = localStorage.getItem('favorites');
             if (saved) {
-              const favIds = JSON.parse(saved);
-              setFavorites(favIds);
-              setFavoriteBooks(allBooks.filter(book => favIds.includes(book.id)));
+              const favIds: number[] = JSON.parse(saved);
+              setFavorites(favIds.map(String));
+              const mapped: Book[] = allBooks
+                .filter(book => favIds.includes(book.id))
+                .map((b: any) => ({
+                  id: String(b.id),
+                  title: b.title,
+                  author: b.author,
+                  description: b.description,
+                  isbn: b.isbn,
+                  totalCopies: 1,
+                  availableCopies: b.status === 'Available' ? 1 : 0,
+                  publishedYear: b.publishYear,
+                  publisher: b.publisher,
+                  image: b.image,
+                  isActive: true,
+                  createdAt: new Date().toISOString(),
+                  updatedAt: new Date().toISOString(),
+                  category: { id: 'local', name: b.category }
+                }));
+              setFavoriteBooks(mapped);
             }
           }
         } else {
           const saved = localStorage.getItem('favorites');
           if (saved) {
-            const favIds = JSON.parse(saved);
-            setFavorites(favIds);
-            setFavoriteBooks(allBooks.filter(book => favIds.includes(book.id)));
+            const favIds: number[] = JSON.parse(saved);
+            setFavorites(favIds.map(String));
+            const mapped: Book[] = allBooks
+              .filter(book => favIds.includes(book.id))
+              .map((b: any) => ({
+                id: String(b.id),
+                title: b.title,
+                author: b.author,
+                description: b.description,
+                isbn: b.isbn,
+                totalCopies: 1,
+                availableCopies: b.status === 'Available' ? 1 : 0,
+                publishedYear: b.publishYear,
+                publisher: b.publisher,
+                image: b.image,
+                isActive: true,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                category: { id: 'local', name: b.category }
+              }));
+            setFavoriteBooks(mapped);
           }
         }
       } catch (e) {
         const saved = localStorage.getItem('favorites');
         if (saved) {
-          const favIds = JSON.parse(saved);
-          setFavorites(favIds);
-          setFavoriteBooks(allBooks.filter(book => favIds.includes(book.id)));
+          const favIds: number[] = JSON.parse(saved);
+          setFavorites(favIds.map(String));
+          const mapped: Book[] = allBooks
+            .filter(book => favIds.includes(book.id))
+            .map((b: any) => ({
+              id: String(b.id),
+              title: b.title,
+              author: b.author,
+              description: b.description,
+              isbn: b.isbn,
+              totalCopies: 1,
+              availableCopies: b.status === 'Available' ? 1 : 0,
+              publishedYear: b.publishYear,
+              publisher: b.publisher,
+              image: b.image,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              category: { id: 'local', name: b.category }
+            }));
+          setFavoriteBooks(mapped);
         }
       }
     };
     load();
   }, [user]);
 
-  const toggleFavorite = async (bookId: string | number) => {
+  const toggleFavoriteServer = async (bookId: string) => {
     try {
-      if (user) {
-        const isFav = (favorites as any[]).includes(bookId);
-        if (isFav) {
-          const resp = await fetch(`/api/favorites?bookId=${bookId}`, {
-            method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
-          });
-          if (!resp.ok) throw new Error('Failed to remove');
-          setFavorites((prev: any[]) => prev.filter(id => id !== bookId));
-          setFavoriteBooks((prev) => prev.filter((b: any) => b.id !== bookId));
-        } else {
-          const resp = await fetch('/api/favorites', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-            },
-            body: JSON.stringify({ bookId })
-          });
-          if (!resp.ok) throw new Error('Failed to add');
-          // After add, refetch to get full book object
-          const reload = await fetch('/api/favorites', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
-          });
-          if (reload.ok) {
-            const data = await reload.json();
-            const books = (data.favorites || []).map((f: any) => f.book).filter(Boolean);
-            const mapped = books.map((b: any) => ({
-              id: b.id,
+      if (!user) {
+        // guest: local only (keep sample in sync)
+        const updated = favorites.includes(bookId) ? favorites.filter(id => id !== bookId) : [...favorites, bookId];
+        setFavorites(updated);
+        // Attempt to update local sample list
+        localStorage.setItem('favorites', JSON.stringify(updated.map(id => Number(id)).filter(n => !isNaN(n))));
+        const saved = localStorage.getItem('favorites');
+        if (saved) {
+          const favIds: number[] = JSON.parse(saved);
+          const mapped: Book[] = allBooks
+            .filter(book => favIds.includes(book.id))
+            .map((b: any) => ({
+              id: String(b.id),
               title: b.title,
               author: b.author,
-              description: b.description || '',
-              image: b.image || '/book-1.svg',
-              category: b.category?.name || 'Unknown',
-              rating: 4.8,
-              status: (b.availableCopies ?? 0) > 0 ? 'Available' : 'Checked Out',
-              publishYear: b.publishedYear || new Date(b.createdAt ?? Date.now()).getFullYear(),
+              description: b.description,
               isbn: b.isbn,
-              pages: b.pages ?? 0,
-              language: b.language ?? 'English'
+              totalCopies: 1,
+              availableCopies: b.status === 'Available' ? 1 : 0,
+              publishedYear: b.publishYear,
+              publisher: b.publisher,
+              image: b.image,
+              isActive: true,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+              category: { id: 'local', name: b.category }
             }));
-            setFavoriteBooks(mapped);
-            setFavorites(mapped.map((b: any) => b.id));
-          }
+          setFavoriteBooks(mapped);
         }
+        return;
+      }
+      const isFav = favorites.includes(bookId);
+      if (isFav) {
+        const resp = await fetch(`/api/favorites?bookId=${encodeURIComponent(bookId)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        });
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          alert(data.error || 'Failed to remove from favorites');
+          return;
+        }
+        setFavorites(prev => prev.filter(id => id !== bookId));
+        setFavoriteBooks(prev => prev.filter(b => b.id !== bookId));
       } else {
-        // guest: local only
-        const updatedFavorites = (favorites as any[]).includes(bookId)
-          ? (favorites as any[]).filter((id: any) => id !== bookId)
-          : [...(favorites as any[]), bookId];
-        setFavorites(updatedFavorites);
-        localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-        setFavoriteBooks(allBooks.filter(book => updatedFavorites.includes(book.id)));
+        const resp = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({ bookId })
+        });
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}));
+          alert(data.error || 'Failed to add to favorites');
+          return;
+        }
+        // Refresh favorites from server for consistency
+        const reload = await fetch('/api/favorites', {
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        });
+        if (reload.ok) {
+          const data = await reload.json();
+          const books: Book[] = (data.favorites || []).map((f: any) => f.book).filter(Boolean);
+          setFavoriteBooks(books);
+          setFavorites(books.map(b => b.id));
+        }
       }
     } catch (e) {
-      // noop alert to keep UI simple
-      console.error('toggleFavorite error', e);
+      console.error('Toggle favorite failed:', e);
+      alert('Failed to update favorites');
+    }
+  };
+
+  const handleImageError = (bookId: string) => {
+    setImageErrors(prev => ({ ...prev, [bookId]: true }));
+  };
+
+  const handleBorrowRequest = async () => {
+    if (!selectedBook || !user) return;
+    try {
+      setSubmitting(true);
+      const response = await fetch('/api/borrow-requests', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+        },
+        body: JSON.stringify({ bookId: selectedBook.id, reason: borrowReason })
+      });
+      const data = await response.json();
+      if (response.ok) {
+        alert('✅ Borrow request submitted successfully!');
+        setShowBorrowModal(false);
+        setBorrowReason('');
+        setSelectedBook(null);
+        setShowBookModal(false);
+        fetchUnreadCount();
+      } else {
+        const errorMessage = data.error || 'Failed to submit borrow request';
+        alert(`❌ Request Failed\n\n${errorMessage}`);
+      }
+    } catch (error) {
+      console.error('Error submitting borrow request:', error);
+      alert('❌ Network Error');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -280,8 +402,8 @@ export default function FavoritesPage() {
     .filter(book => {
       const matchesSearch = book.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
                            book.author.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           book.category.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesFilter = filterBy === "all" || book.category.toLowerCase() === filterBy.toLowerCase();
+                           (book.category?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesFilter = filterBy === "all" || (book.category?.name || '').toLowerCase() === filterBy.toLowerCase();
       return matchesSearch && matchesFilter;
     })
     .sort((a, b) => {
@@ -291,15 +413,15 @@ export default function FavoritesPage() {
         case "author":
           return a.author.localeCompare(b.author);
         case "rating":
-          return b.rating - a.rating;
+          return (b.rating ?? 0) - (a.rating ?? 0);
         case "year":
-          return b.publishYear - a.publishYear;
+          return (b.publishedYear ?? 0) - (a.publishedYear ?? 0);
         default:
           return 0;
       }
     });
 
-  const categories = [...new Set(favoriteBooks.map(book => book.category))];
+  const categories = [...new Set(favoriteBooks.map(book => book.category?.name).filter(Boolean))] as string[];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-pink-50 via-white to-red-50">
@@ -463,77 +585,100 @@ export default function FavoritesPage() {
                 {filteredAndSortedBooks.map((book) => (
                   <div
                     key={book.id}
-                    className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-pink-100 group"
+                    className="bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 border border-blue-100 group cursor-pointer flex flex-col h-full"
+                    onClick={() => {
+                      setSelectedBook(book);
+                      setShowBookModal(true);
+                    }}
                   >
-                    <div className="relative h-56 md:h-64">
-                      <Image
-                        src={book.image}
-                        alt={book.title}
-                        fill
-                        className="object-contain bg-gradient-to-br from-pink-50 to-red-50"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
-                      />
-                      <div className="absolute top-4 right-4 flex gap-2">
-                        <button
-                          onClick={() => toggleFavorite(book.id)}
-                          className="p-2 rounded-full bg-red-500 text-white hover:bg-red-600 transition-all duration-200 transform hover:scale-110 shadow-lg"
-                          aria-label="Remove from favorites"
-                        >
-                          <svg className="w-4 h-4 md:w-5 md:h-5" fill="currentColor" stroke="currentColor" strokeWidth="1" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                          </svg>
-                        </button>
-                        <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${
-                            book.status === "Available"
-                              ? "bg-green-100 text-green-800"
-                              : book.status === "Reserved"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {book.status}
+                    <div className="relative h-56 md:h-64 flex-shrink-0 bg-gradient-to-br from-blue-50 to-indigo-100">
+                      {book.image && book.image !== "/book-1.svg" && !imageErrors[book.id] ? (
+                        <Image
+                          src={book.image}
+                          alt={book.title}
+                          fill
+                          className="object-contain p-4"
+                          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                          onError={() => handleImageError(book.id)}
+                        />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center p-6 text-center">
+                          <div className="w-20 h-28 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-lg flex items-center justify-center mb-4">
+                            <svg className="w-12 h-12 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                            </svg>
+                          </div>
+                          <h4 className="text-sm font-semibold text-gray-700 mb-1 text-center overflow-hidden" style={{
+                            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', textOverflow: 'ellipsis'
+                          }}>{book.title}</h4>
+                          <p className="text-xs text-gray-500 text-center">{book.author}</p>
+                        </div>
+                      )}
+                      <div className="absolute top-4 right-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${book.availableCopies > 0 ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+                          {book.availableCopies > 0 ? "Available" : "Not Available"}
                         </span>
+                      </div>
+                      <div className="absolute bottom-4 right-4">
+                        <div className="flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2 py-1">
+                          <svg className="w-3 h-3 text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                            <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          <span className="text-xs font-semibold text-gray-700">{book.availableCopies}/{book.totalCopies}</span>
+                        </div>
                       </div>
                     </div>
-                    <div className="p-4 md:p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <span className="text-pink-600 text-xs md:text-sm font-medium bg-pink-100 px-2 py-1 rounded-full">
-                          {book.category}
-                        </span>
-                        <span className="text-gray-500 text-xs md:text-sm">{book.publishYear}</span>
+                    <div className="p-4 md:p-6 flex flex-col flex-grow">
+                      <div className="flex items-center gap-2 mb-3 flex-shrink-0">
+                        <span className="text-blue-600 text-xs md:text-sm font-medium bg-blue-100 px-2 py-1 rounded-full truncate">{book.category.name}</span>
+                        <span className="text-gray-500 text-xs md:text-sm flex-shrink-0">{book.publishedYear}</span>
                       </div>
-                      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-pink-600 transition-colors">
-                        {book.title}
-                      </h3>
-                      <p className="text-gray-600 mb-2 text-sm md:text-base">by {book.author}</p>
-                      <p className="text-gray-600 text-sm mb-4 line-clamp-2">{book.description}</p>
-                      
-                      <div className="space-y-3">
+                      <h3 className="text-lg md:text-xl font-bold text-gray-800 mb-2 line-clamp-2 group-hover:text-blue-600 transition-colors flex-shrink-0" title={book.title}>{book.title}</h3>
+                      <p className="text-gray-600 mb-2 text-sm md:text-base flex-shrink-0 truncate" title={`by ${book.author}`}>by {book.author}</p>
+                      <p className="text-gray-600 text-sm mb-4 line-clamp-3 flex-grow" title={book.description}>{book.description}</p>
+                      <div className="space-y-3 flex-shrink-0">
                         <div className="flex items-center justify-between text-sm text-gray-500">
-                          <span>Pages: {book.pages}</span>
-                          <span>{book.language}</span>
+                          <span className="truncate" title={`ISBN: ${book.isbn}`}>ISBN: {book.isbn}</span>
+                          <span className="truncate text-right" title={book.publisher || 'Unknown Publisher'}>{book.publisher || 'Unknown Publisher'}</span>
                         </div>
-                        
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-1">
-                            <svg className="w-4 h-4 md:w-5 md:h-5 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            <span className="text-gray-700 font-semibold text-sm md:text-base">{book.rating}</span>
-                          </div>
-                          <button
-                            className={`px-4 py-2 rounded-full font-medium text-sm transition-all duration-200 ${
-                              book.status === "Available"
-                                ? "bg-pink-600 hover:bg-pink-700 text-white"
-                                : book.status === "Reserved"
-                                ? "bg-yellow-600 hover:bg-yellow-700 text-white"
-                                : "bg-gray-400 text-gray-200 cursor-not-allowed"
-                            }`}
-                            disabled={book.status === "Checked Out"}
-                          >
-                            {book.status === "Available" ? "Borrow" : book.status === "Reserved" ? "Join Queue" : "Unavailable"}
-                          </button>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Available: {book.availableCopies}/{book.totalCopies}</span>
+                          <span className="font-semibold text-blue-600">{book.availableCopies > 0 ? 'In Stock' : 'Out of Stock'}</span>
+                        </div>
+                        <div className="flex flex-col gap-2 pt-3 border-t border-gray-100">
+                          {user ? (
+                            <>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedBook(book);
+                                  setShowBorrowModal(true);
+                                }}
+                                disabled={book.availableCopies === 0}
+                                className={`w-full px-4 py-2 rounded-full font-medium transition-all duration-200 flex-shrink-0 ${book.availableCopies > 0 ? "bg-blue-600 text-white hover:bg-blue-700" : "bg-gray-300 text-gray-500 cursor-not-allowed"}`}
+                              >
+                                {book.availableCopies > 0 ? 'Request to Borrow' : 'Not Available'}
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  toggleFavoriteServer(book.id);
+                                }}
+                                className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-200 flex-shrink-0 ${favorites.includes(book.id) ? "bg-red-500 text-white hover:bg-red-600" : "bg-gray-100 text-gray-600 hover:bg-red-50 hover:text-red-500"}`}
+                                aria-label={favorites.includes(book.id) ? "Remove from favorites" : "Add to favorites"}
+                              >
+                                <svg className="w-4 h-4 flex-shrink-0" fill={favorites.includes(book.id) ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                </svg>
+                                <span className="text-sm font-medium truncate">{favorites.includes(book.id) ? "Favorited" : "Add to Favorites"}</span>
+                              </button>
+                            </>
+                          ) : (
+                            <div className="text-center flex-shrink-0">
+                              <p className="text-sm text-gray-500 mb-2">Login to borrow books</p>
+                              <a href="/login" className="inline-block px-4 py-2 bg-blue-600 text-white rounded-full text-sm font-medium hover:bg-blue-700 transition-colors">Login</a>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -571,7 +716,7 @@ export default function FavoritesPage() {
 
               <button
                 onClick={() => {
-                  const availableFavorites = favoriteBooks.filter(book => book.status === "Available");
+                  const availableFavorites = favoriteBooks.filter(book => book.availableCopies > 0);
                   if (availableFavorites.length > 0) {
                     alert(`You can borrow ${availableFavorites.length} of your favorite books right now!`);
                   } else {
@@ -609,6 +754,136 @@ export default function FavoritesPage() {
           </div>
         </section>
       )}
-    </div>
-  );
+        {/* Book Details Modal */}
+        {showBookModal && selectedBook && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => setShowBookModal(false)}>
+            <div className="bg-white/95 backdrop-blur-xl rounded-3xl max-w-4xl w-full max-h-[90vh] overflow-y-auto shadow-2xl border border-white/20" onClick={(e) => e.stopPropagation()}>
+              <div className="relative">
+                <div className="flex justify-between items-center p-6 border-b border-gray-200">
+                  <h2 className="text-2xl font-bold text-gray-900">Book Details</h2>
+                  <button onClick={() => setShowBookModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                  </button>
+                </div>
+                <div className="p-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="lg:col-span-1">
+                      <div className="relative h-80 lg:h-96 bg-gradient-to-br from-blue-50 to-indigo-100 rounded-2xl overflow-hidden shadow-lg">
+                        {selectedBook.image && selectedBook.image !== "/book-1.svg" && !imageErrors[selectedBook.id] ? (
+                          <Image src={selectedBook.image} alt={selectedBook.title} fill className="object-contain p-4" sizes="(max-width: 1024px) 100vw, 33vw" onError={() => handleImageError(selectedBook.id)} />
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center p-8 text-center">
+                            <div className="w-32 h-40 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg shadow-xl flex items-center justify-center mb-6">
+                              <svg className="w-20 h-20 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+                            </div>
+                            <h4 className="text-lg font-semibold text-gray-700 mb-2 text-center">{selectedBook.title}</h4>
+                            <p className="text-sm text-gray-500 text-center">by {selectedBook.author}</p>
+                          </div>
+                        )}
+                      </div>
+                      <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-100">
+                        <h4 className="font-bold text-gray-900 mb-3 text-base">Availability Status</h4>
+                        <div className="space-y-3 text-sm">
+                          <div className="flex justify-between"><span className="text-gray-700 font-medium">Total Copies:</span><span className="font-bold text-gray-900">{selectedBook.totalCopies}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-700 font-medium">Available:</span><span className="font-bold text-green-600">{selectedBook.availableCopies}</span></div>
+                          <div className="flex justify-between"><span className="text-gray-700 font-medium">Borrowed:</span><span className="font-bold text-blue-600">{selectedBook.totalCopies - selectedBook.availableCopies}</span></div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="lg:col-span-2">
+                      <div className="space-y-6">
+                        <div>
+                          <h1 className="text-3xl font-bold text-gray-900 mb-2">{selectedBook.title}</h1>
+                          <p className="text-xl text-gray-600 mb-4">by {selectedBook.author}</p>
+                          <div className="flex items-center gap-4 mb-4">
+                            <div className="flex items-center gap-1">
+                              <svg className="w-5 h-5 text-blue-400" fill="currentColor" viewBox="0 0 20 20"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                              <span className="font-semibold text-gray-900">ISBN: {selectedBook.isbn}</span>
+                            </div>
+                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${selectedBook.availableCopies > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{selectedBook.availableCopies > 0 ? 'Available' : 'Not Available'}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 mb-3">Description</h3>
+                          <p className="text-gray-800 leading-relaxed text-base">{selectedBook.description}</p>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Publication Details</h3>
+                            <div className="space-y-3 text-sm">
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">Publisher:</span><span className="font-semibold text-gray-900">{selectedBook.publisher || 'Not specified'}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">Year:</span><span className="font-semibold text-gray-900">{selectedBook.publishedYear || 'Not specified'}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">ISBN:</span><span className="font-semibold text-gray-900 font-mono text-xs">{selectedBook.isbn}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">Active:</span><span className="font-semibold text-gray-900">{selectedBook.isActive ? 'Yes' : 'No'}</span></div>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold text-gray-900 mb-3">Library Information</h3>
+                            <div className="space-y-3 text-sm">
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">Category:</span><span className="font-semibold text-gray-900">{selectedBook.category.name}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">Total Copies:</span><span className="font-semibold text-gray-900">{selectedBook.totalCopies}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">Available:</span><span className="font-semibold text-green-600">{selectedBook.availableCopies}</span></div>
+                              <div className="flex justify-between"><span className="text-gray-700 font-medium">Status:</span><span className={`font-semibold ${selectedBook.availableCopies > 0 ? 'text-green-600' : 'text-red-600'}`}>{selectedBook.availableCopies > 0 ? 'Available' : 'Not Available'}</span></div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-4 pt-6 border-t border-gray-200">
+                          <button
+                            onClick={() => { if (selectedBook.availableCopies > 0) { setShowBorrowModal(true); } }}
+                            className={`flex-1 py-3 px-6 rounded-xl font-semibold transition-all duration-200 ${selectedBook.availableCopies > 0 ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}
+                            disabled={selectedBook.availableCopies === 0}
+                          >
+                            {selectedBook.availableCopies > 0 ? 'Request to Borrow' : 'Currently Unavailable'}
+                          </button>
+                          <button
+                            onClick={() => toggleFavoriteServer(selectedBook.id)}
+                            className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${favorites.includes(selectedBook.id) ? 'bg-red-500 hover:bg-red-600 text-white' : 'bg-gray-100 hover:bg-red-50 text-gray-700 hover:text-red-500'}`}
+                          >
+                            <svg className="w-5 h-5" fill={favorites.includes(selectedBook.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+                            {favorites.includes(selectedBook.id) ? 'Remove from Favorites' : 'Add to Favorites'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Borrow Modal */}
+        {showBorrowModal && selectedBook && (
+          <div className="fixed inset-0 bg-black/20 backdrop-blur-md flex items-center justify-center p-4 z-50" onClick={() => setShowBorrowModal(false)}>
+            <div className="bg-white/95 backdrop-blur-xl rounded-2xl max-w-md w-full p-6 shadow-2xl border border-white/20" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                  <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" /></svg>
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900">Request to Borrow</h3>
+                  <p className="text-sm text-gray-600">Submit your borrowing request</p>
+                </div>
+              </div>
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-4 mb-6 border border-blue-100">
+                <h4 className="font-bold text-gray-900 mb-1">{selectedBook.title}</h4>
+                <p className="text-sm text-gray-600 mb-2">by {selectedBook.author}</p>
+                <div className="flex items-center justify-between text-xs text-gray-500"><span>ISBN: {selectedBook.isbn}</span><span className="flex items-center gap-1"><span className="w-2 h-2 bg-green-500 rounded-full"></span>{selectedBook.availableCopies} available</span></div>
+              </div>
+              <div className="mb-6">
+                <label className="block text-sm font-semibold text-gray-800 mb-3">Reason for borrowing <span className="text-gray-500 font-normal">(optional)</span></label>
+                <textarea value={borrowReason} onChange={(e) => setBorrowReason(e.target.value)} placeholder="e.g., Research for assignment, Personal reading, Course requirement..." rows={4} className="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800 text-base leading-relaxed resize-none" />
+              </div>
+              <div className="flex items-center justify-end gap-3">
+                <button onClick={() => setShowBorrowModal(false)} className="px-4 py-2 rounded-xl border border-gray-300 hover:bg-gray-50">Cancel</button>
+                <button onClick={handleBorrowRequest} disabled={submitting} className="px-4 py-2 rounded-xl bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50">
+                  {submitting ? 'Submitting...' : 'Submit Request'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+      </div>
+      );
 }
