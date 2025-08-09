@@ -31,6 +31,7 @@ model User {
   notifications  Notification[]
   fines          Fine[]
   history        UserHistory[]
+  favorites      Favorite[]
 }
 
 model Book {
@@ -54,6 +55,7 @@ model Book {
   // Relations
   borrowRequests BorrowRequest[]
   bookHistory    BookHistory[]
+  favorites      Favorite[]
 }
 
 model Category {
@@ -134,6 +136,16 @@ model BookHistory {
   oldData   String? // JSON string of previous state
   newData   String? // JSON string of current state
   timestamp DateTime @default(now())
+}
+
+// Favorites
+model Favorite {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
+  book      Book     @relation(fields: [bookId], references: [id])
+  bookId    String   @db.ObjectId
+  createdAt DateTime @default(now())
 }
 
 // System Settings

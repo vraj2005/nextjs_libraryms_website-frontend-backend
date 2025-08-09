@@ -130,13 +130,33 @@ export default function HomePage() {
   const [borrowReason, setBorrowReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  // Load favorites from localStorage
+  // Load favorites: server for logged-in users, else local
   useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites));
-    }
-  }, []);
+    const init = async () => {
+      try {
+        if (user) {
+          const resp = await fetch('/api/favorites', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const ids: string[] = (data.favorites || []).map((f: any) => f.book?.id).filter(Boolean);
+            setFavorites(ids);
+          } else {
+            const saved = localStorage.getItem('favorites');
+            if (saved) setFavorites(JSON.parse(saved));
+          }
+        } else {
+          const saved = localStorage.getItem('favorites');
+          if (saved) setFavorites(JSON.parse(saved));
+        }
+      } catch (_) {
+        const saved = localStorage.getItem('favorites');
+        if (saved) setFavorites(JSON.parse(saved));
+      }
+    };
+    init();
+  }, [user]);
 
   // Fetch featured books from API
   const fetchFeaturedBooks = async () => {
@@ -244,13 +264,39 @@ export default function HomePage() {
     fetchFeaturedBooks();
   }, []);
 
-  const toggleFavorite = (bookId: string) => {
-    const updatedFavorites = favorites.includes(bookId)
-      ? favorites.filter(id => id !== bookId)
-      : [...favorites, bookId];
-    
-    setFavorites(updatedFavorites);
-    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+  const toggleFavorite = async (bookId: string) => {
+    try {
+      if (!user) {
+        const updated = favorites.includes(bookId)
+          ? favorites.filter(id => id !== bookId)
+          : [...favorites, bookId];
+        setFavorites(updated);
+        localStorage.setItem('favorites', JSON.stringify(updated));
+        return;
+      }
+      const isFav = favorites.includes(bookId);
+      if (isFav) {
+        const resp = await fetch(`/api/favorites?bookId=${encodeURIComponent(bookId)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        });
+        if (!resp.ok) return;
+        setFavorites(prev => prev.filter(id => id !== bookId));
+      } else {
+        const resp = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({ bookId })
+        });
+        if (!resp.ok) return;
+        setFavorites(prev => prev.includes(bookId) ? prev : [...prev, bookId]);
+      }
+    } catch (e) {
+      // ignore
+    }
   };
 
   const nextSlide = () => {

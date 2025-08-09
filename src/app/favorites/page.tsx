@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useAuth } from "@/contexts/AuthContext";
 
 // Sample books data (in a real app, this would come from an API or database)
 const allBooks = [
@@ -149,30 +150,129 @@ const allBooks = [
 ];
 
 export default function FavoritesPage() {
-  const [favorites, setFavorites] = useState<number[]>([]);
-  const [favoriteBooks, setFavoriteBooks] = useState<typeof allBooks>([]);
+  const { user } = useAuth();
+  const [favorites, setFavorites] = useState<string[] | number[]>([]);
+  const [favoriteBooks, setFavoriteBooks] = useState<any[]>([]);
   const [sortBy, setSortBy] = useState<"title" | "author" | "rating" | "year">("title");
   const [filterBy, setFilterBy] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Load favorites from localStorage
+  // Load favorites: for authenticated users from API, else from local
   useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites');
-    if (savedFavorites) {
-      const favIds = JSON.parse(savedFavorites);
-      setFavorites(favIds);
-      setFavoriteBooks(allBooks.filter(book => favIds.includes(book.id)));
-    }
-  }, []);
+    const load = async () => {
+      try {
+        if (user) {
+          const resp = await fetch('/api/favorites', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+          });
+          if (resp.ok) {
+            const data = await resp.json();
+            const books = (data.favorites || []).map((f: any) => f.book).filter(Boolean);
+            const mapped = books.map((b: any) => ({
+              id: b.id,
+              title: b.title,
+              author: b.author,
+              description: b.description || '',
+              image: b.image || '/book-1.svg',
+              category: b.category?.name || 'Unknown',
+              rating: 4.8,
+              status: (b.availableCopies ?? 0) > 0 ? 'Available' : 'Checked Out',
+              publishYear: b.publishedYear || new Date(b.createdAt ?? Date.now()).getFullYear(),
+              isbn: b.isbn,
+              pages: b.pages ?? 0,
+              language: b.language ?? 'English'
+            }));
+            setFavoriteBooks(mapped);
+            setFavorites(mapped.map((b: any) => b.id));
+          } else {
+            // fallback to local
+            const saved = localStorage.getItem('favorites');
+            if (saved) {
+              const favIds = JSON.parse(saved);
+              setFavorites(favIds);
+              setFavoriteBooks(allBooks.filter(book => favIds.includes(book.id)));
+            }
+          }
+        } else {
+          const saved = localStorage.getItem('favorites');
+          if (saved) {
+            const favIds = JSON.parse(saved);
+            setFavorites(favIds);
+            setFavoriteBooks(allBooks.filter(book => favIds.includes(book.id)));
+          }
+        }
+      } catch (e) {
+        const saved = localStorage.getItem('favorites');
+        if (saved) {
+          const favIds = JSON.parse(saved);
+          setFavorites(favIds);
+          setFavoriteBooks(allBooks.filter(book => favIds.includes(book.id)));
+        }
+      }
+    };
+    load();
+  }, [user]);
 
-  const toggleFavorite = (bookId: number) => {
-    const updatedFavorites = favorites.includes(bookId)
-      ? favorites.filter(id => id !== bookId)
-      : [...favorites, bookId];
-    
-    setFavorites(updatedFavorites);
-    localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
-    setFavoriteBooks(allBooks.filter(book => updatedFavorites.includes(book.id)));
+  const toggleFavorite = async (bookId: string | number) => {
+    try {
+      if (user) {
+        const isFav = (favorites as any[]).includes(bookId);
+        if (isFav) {
+          const resp = await fetch(`/api/favorites?bookId=${bookId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+          });
+          if (!resp.ok) throw new Error('Failed to remove');
+          setFavorites((prev: any[]) => prev.filter(id => id !== bookId));
+          setFavoriteBooks((prev) => prev.filter((b: any) => b.id !== bookId));
+        } else {
+          const resp = await fetch('/api/favorites', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            },
+            body: JSON.stringify({ bookId })
+          });
+          if (!resp.ok) throw new Error('Failed to add');
+          // After add, refetch to get full book object
+          const reload = await fetch('/api/favorites', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+          });
+          if (reload.ok) {
+            const data = await reload.json();
+            const books = (data.favorites || []).map((f: any) => f.book).filter(Boolean);
+            const mapped = books.map((b: any) => ({
+              id: b.id,
+              title: b.title,
+              author: b.author,
+              description: b.description || '',
+              image: b.image || '/book-1.svg',
+              category: b.category?.name || 'Unknown',
+              rating: 4.8,
+              status: (b.availableCopies ?? 0) > 0 ? 'Available' : 'Checked Out',
+              publishYear: b.publishedYear || new Date(b.createdAt ?? Date.now()).getFullYear(),
+              isbn: b.isbn,
+              pages: b.pages ?? 0,
+              language: b.language ?? 'English'
+            }));
+            setFavoriteBooks(mapped);
+            setFavorites(mapped.map((b: any) => b.id));
+          }
+        }
+      } else {
+        // guest: local only
+        const updatedFavorites = (favorites as any[]).includes(bookId)
+          ? (favorites as any[]).filter((id: any) => id !== bookId)
+          : [...(favorites as any[]), bookId];
+        setFavorites(updatedFavorites);
+        localStorage.setItem('favorites', JSON.stringify(updatedFavorites));
+        setFavoriteBooks(allBooks.filter(book => updatedFavorites.includes(book.id)));
+      }
+    } catch (e) {
+      // noop alert to keep UI simple
+      console.error('toggleFavorite error', e);
+    }
   };
 
   // Filter and sort books

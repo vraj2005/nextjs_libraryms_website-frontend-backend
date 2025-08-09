@@ -74,13 +74,33 @@ export default function BooksPage() {
   const [currentPage, setCurrentPage] = useState(1)
   const booksPerPage = 8
 
-  // Load favorites from localStorage
+  // Load favorites: if logged in -> from server, else from localStorage
   useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites')
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites))
+    const init = async () => {
+      try {
+        if (user) {
+          const resp = await fetch('/api/favorites', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+            }
+          })
+          if (resp.ok) {
+            const data = await resp.json()
+            const ids: string[] = (data.favorites || []).map((f: any) => f.book?.id).filter(Boolean)
+            setFavorites(ids)
+          }
+        } else {
+          const savedFavorites = localStorage.getItem('favorites')
+          if (savedFavorites) setFavorites(JSON.parse(savedFavorites))
+        }
+      } catch (e) {
+        // Fallback to local if server fails
+        const savedFavorites = localStorage.getItem('favorites')
+        if (savedFavorites) setFavorites(JSON.parse(savedFavorites))
+      }
     }
-  }, [])
+    init()
+  }, [user])
 
   // Debounce search query
   useEffect(() => {
@@ -168,9 +188,53 @@ export default function BooksPage() {
     const updatedFavorites = favorites.includes(bookId)
       ? favorites.filter(id => id !== bookId)
       : [...favorites, bookId]
-    
     setFavorites(updatedFavorites)
+    // Keep localStorage as a fallback for non-logged in users
     localStorage.setItem('favorites', JSON.stringify(updatedFavorites))
+  }
+
+  const toggleFavoriteServer = async (bookId: string) => {
+    try {
+      if (!user) {
+        // For guests, just toggle locally
+        toggleFavorite(bookId)
+        return
+      }
+
+      const isFav = favorites.includes(bookId)
+      if (isFav) {
+        const resp = await fetch(`/api/favorites?bookId=${encodeURIComponent(bookId)}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          }
+        })
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}))
+          alert(data.error || 'Failed to remove from favorites')
+          return
+        }
+        setFavorites(prev => prev.filter(id => id !== bookId))
+      } else {
+        const resp = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({ bookId })
+        })
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}))
+          alert(data.error || 'Failed to add to favorites')
+          return
+        }
+        setFavorites(prev => prev.includes(bookId) ? prev : [...prev, bookId])
+      }
+    } catch (e) {
+      console.error('Toggle favorite failed:', e)
+      alert('Failed to update favorites')
+    }
   }
 
   const handleImageError = (bookId: string) => {
@@ -574,10 +638,10 @@ export default function BooksPage() {
                               >
                                 {book.availableCopies > 0 ? 'Request to Borrow' : 'Not Available'}
                               </button>
-                              <button
+                <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  toggleFavorite(book.id);
+                  toggleFavoriteServer(book.id);
                                 }}
                                 className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-200 flex-shrink-0 ${
                                   favorites.includes(book.id)
@@ -828,7 +892,7 @@ export default function BooksPage() {
                         </button>
                         
                         <button
-                          onClick={() => toggleFavorite(selectedBook!.id)}
+                          onClick={() => toggleFavoriteServer(selectedBook!.id)}
                           className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
                             favorites.includes(selectedBook!.id)
                               ? "bg-red-500 hover:bg-red-600 text-white"
