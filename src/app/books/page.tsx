@@ -191,6 +191,10 @@ export default function BooksPage() {
     setFavorites(updatedFavorites)
     // Keep localStorage as a fallback for non-logged in users
     localStorage.setItem('favorites', JSON.stringify(updatedFavorites))
+    // Notify listeners (navbar) about count change
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: updatedFavorites.length } }))
+    }
   }
 
   const toggleFavoriteServer = async (bookId: string) => {
@@ -214,7 +218,11 @@ export default function BooksPage() {
           alert(data.error || 'Failed to remove from favorites')
           return
         }
-        setFavorites(prev => prev.filter(id => id !== bookId))
+        setFavorites(prev => {
+          const next = prev.filter(id => id !== bookId)
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }))
+          return next
+        })
       } else {
         const resp = await fetch('/api/favorites', {
           method: 'POST',
@@ -229,7 +237,11 @@ export default function BooksPage() {
           alert(data.error || 'Failed to add to favorites')
           return
         }
-        setFavorites(prev => prev.includes(bookId) ? prev : [...prev, bookId])
+        setFavorites(prev => {
+          const next = prev.includes(bookId) ? prev : [...prev, bookId]
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }))
+          return next
+        })
       }
     } catch (e) {
       console.error('Toggle favorite failed:', e)

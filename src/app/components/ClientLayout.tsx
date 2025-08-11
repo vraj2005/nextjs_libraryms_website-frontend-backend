@@ -2,6 +2,7 @@
 
 import { AuthProvider } from "@/contexts/AuthContext";
 import { NotificationProvider } from "@/contexts/NotificationContext";
+import { FavoritesProvider } from "@/contexts/FavoritesContext";
 import dynamic from "next/dynamic";
 
 // Dynamic imports to prevent hydration issues
@@ -33,9 +34,11 @@ export default function ClientLayout({ children }: ClientLayoutProps) {
   return (
     <AuthProvider>
       <NotificationProvider>
-        <ConditionalNavigation />
-        {children}
-        <ConditionalFooter />
+        <FavoritesProvider>
+          <ConditionalNavigation />
+          {children}
+          <ConditionalFooter />
+        </FavoritesProvider>
       </NotificationProvider>
     </AuthProvider>
   );

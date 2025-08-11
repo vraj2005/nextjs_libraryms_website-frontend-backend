@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useNotifications } from "@/contexts/NotificationContext";
+import { useFavorites } from "@/contexts/FavoritesContext";
+import { usePathname } from "next/navigation";
 
 export default function Navigation() {
   const { unreadCount } = useNotifications();
@@ -13,6 +15,13 @@ export default function Navigation() {
   const accountDropdownRef = useRef<HTMLDivElement>(null);
   const categoriesDropdownRef = useRef<HTMLDivElement>(null);
   const { user, logout } = useAuth();
+  const { favoritesCount, refreshFavoritesCount } = useFavorites();
+  const pathname = usePathname();
+
+  // Refresh favorites count on route changes (helps when toggling from other pages)
+  useEffect(() => {
+    refreshFavoritesCount();
+  }, [pathname, refreshFavoritesCount]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -185,7 +194,11 @@ export default function Navigation() {
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-6 h-6 md:w-8 md:h-8 text-pink-500 group-hover:text-pink-700 drop-shadow" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" d="M21.8 7.6c0-2.5-2-4.5-4.5-4.5-1.5 0-2.8.7-3.6 1.8C12.5 3.8 11.2 3.1 9.7 3.1c-2.5 0-4.5 2-4.5 4.5 0 4.2 7.1 9.1 7.1 9.1s7.1-4.9 7.1-9.1z" />
             </svg>
-            <span className="absolute -top-2 -right-2 bg-pink-400 text-white text-xs font-bold rounded-full px-1.5 py-0.5 border-2 border-white shadow animate-pulse">5</span>
+            {favoritesCount > 0 && (
+              <span className="absolute -top-2 -right-2 bg-pink-400 text-white text-xs font-bold rounded-full px-1.5 py-0.5 border-2 border-white shadow animate-pulse">
+                {favoritesCount}
+              </span>
+            )}
           </Link>
           <div className="relative" ref={accountDropdownRef}>
             <button 

@@ -294,6 +294,7 @@ export default function HomePage() {
           : [...favorites, bookId];
         setFavorites(updated);
         localStorage.setItem('favorites', JSON.stringify(updated));
+        window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: updated.length } }));
         return;
       }
       const isFav = favorites.includes(bookId);
@@ -303,7 +304,11 @@ export default function HomePage() {
           headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
         });
         if (!resp.ok) return;
-        setFavorites(prev => prev.filter(id => id !== bookId));
+        setFavorites(prev => {
+          const next = prev.filter(id => id !== bookId);
+          window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }));
+          return next;
+        });
       } else {
         const resp = await fetch('/api/favorites', {
           method: 'POST',
@@ -314,7 +319,11 @@ export default function HomePage() {
           body: JSON.stringify({ bookId })
         });
         if (!resp.ok) return;
-        setFavorites(prev => prev.includes(bookId) ? prev : [...prev, bookId]);
+        setFavorites(prev => {
+          const next = prev.includes(bookId) ? prev : [...prev, bookId];
+          window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }));
+          return next;
+        });
       }
     } catch (e) {
       // ignore

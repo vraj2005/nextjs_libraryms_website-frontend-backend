@@ -169,6 +169,9 @@ export default function CategoryPage() {
     
     setFavorites(newFavorites)
     localStorage.setItem('favorites', JSON.stringify(newFavorites))
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: newFavorites.length } }))
+    }
   }
 
   const openBookModal = (book: Book) => {

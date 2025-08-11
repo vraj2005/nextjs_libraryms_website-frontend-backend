@@ -292,6 +292,9 @@ export default function FavoritesPage() {
         setFavorites(updated);
         // Attempt to update local sample list
         localStorage.setItem('favorites', JSON.stringify(updated.map(id => Number(id)).filter(n => !isNaN(n))));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: updated.length } }));
+        }
         const saved = localStorage.getItem('favorites');
         if (saved) {
           const favIds: number[] = JSON.parse(saved);
@@ -328,7 +331,13 @@ export default function FavoritesPage() {
           alert(data.error || 'Failed to remove from favorites');
           return;
         }
-        setFavorites(prev => prev.filter(id => id !== bookId));
+        setFavorites(prev => {
+          const next = prev.filter(id => id !== bookId);
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }));
+          }
+          return next;
+        });
         setFavoriteBooks(prev => prev.filter(b => b.id !== bookId));
       } else {
         const resp = await fetch('/api/favorites', {
@@ -352,7 +361,13 @@ export default function FavoritesPage() {
           const data = await reload.json();
           const books: Book[] = (data.favorites || []).map((f: any) => f.book).filter(Boolean);
           setFavoriteBooks(books);
-          setFavorites(books.map(b => b.id));
+          setFavorites(prev => {
+            const next = books.map(b => b.id);
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }));
+            }
+            return next;
+          });
         }
       }
     } catch (e) {
