@@ -124,6 +124,8 @@ export default function HomePage() {
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [featuredBooks, setFeaturedBooks] = useState<Book[]>([]);
   const [featuredBooksLoading, setFeaturedBooksLoading] = useState(true);
+  const [stats, setStats] = useState<{ totalBooks: number; activeMembers: number } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [showBookModal, setShowBookModal] = useState(false);
   const [showBorrowModal, setShowBorrowModal] = useState(false);
@@ -211,6 +213,24 @@ export default function HomePage() {
     }
   };
 
+  // Fetch high-level stats (total books, active members)
+  const fetchStats = async () => {
+    try {
+      setStatsLoading(true);
+      const res = await fetch('/api/stats');
+      if (res.ok) {
+        const data = await res.json();
+        setStats({ totalBooks: data.totalBooks || 0, activeMembers: data.activeMembers || 0 });
+      } else {
+        setStats({ totalBooks: 0, activeMembers: 0 });
+      }
+    } catch (e) {
+      setStats({ totalBooks: 0, activeMembers: 0 });
+    } finally {
+      setStatsLoading(false);
+    }
+  }
+
   // Helper function to get category icon
   const getCategoryIcon = (categoryName: string) => {
     const name = categoryName.toLowerCase();
@@ -262,6 +282,8 @@ export default function HomePage() {
     fetchCategories();
     // Fetch featured books from API
     fetchFeaturedBooks();
+  // Fetch stats
+  fetchStats();
   }, []);
 
   const toggleFavorite = async (bookId: string) => {
@@ -481,11 +503,23 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto px-4 md:px-8">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
             <div className="bg-gradient-to-br from-sky-500 to-sky-600 text-white p-4 md:p-6 rounded-2xl text-center shadow-xl">
-              <div className="text-2xl md:text-4xl font-bold mb-2">15,000+</div>
+              <div className="text-2xl md:text-4xl font-bold mb-2">
+                {statsLoading ? (
+                  <span className="opacity-70">...</span>
+                ) : (
+                  (stats?.totalBooks ?? 0).toLocaleString()
+                )}
+              </div>
               <div className="text-sky-100 text-sm md:text-base">Total Books</div>
             </div>
             <div className="bg-gradient-to-br from-amber-500 to-amber-600 text-white p-4 md:p-6 rounded-2xl text-center shadow-xl">
-              <div className="text-2xl md:text-4xl font-bold mb-2">5,200+</div>
+              <div className="text-2xl md:text-4xl font-bold mb-2">
+                {statsLoading ? (
+                  <span className="opacity-70">...</span>
+                ) : (
+                  (stats?.activeMembers ?? 0).toLocaleString()
+                )}
+              </div>
               <div className="text-amber-100 text-sm md:text-base">Active Members</div>
             </div>
             <div className="bg-gradient-to-br from-purple-500 to-purple-600 text-white p-4 md:p-6 rounded-2xl text-center shadow-xl">
