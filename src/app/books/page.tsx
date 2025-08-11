@@ -82,7 +82,8 @@ export default function BooksPage() {
           const resp = await fetch('/api/favorites', {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
-            }
+            },
+            cache: 'no-store'
           })
           if (resp.ok) {
             const data = await resp.json()

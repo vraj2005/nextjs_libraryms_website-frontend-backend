@@ -194,7 +194,8 @@ export default function FavoritesPage() {
       try {
         if (user) {
           const resp = await fetch('/api/favorites', {
-            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+            cache: 'no-store'
           });
           if (resp.ok) {
             const data = await resp.json();
@@ -282,6 +283,21 @@ export default function FavoritesPage() {
       }
     };
     load();
+
+    // Refetch on window focus to ensure list is fresh when navigating back
+    const onFocus = () => { void load(); };
+    // Listen for global favorites updates (e.g., toggled from other pages)
+    const onFavsUpdated = () => { void load(); };
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', onFocus);
+      window.addEventListener('favorites-updated', onFavsUpdated as EventListener);
+    }
+    return () => {
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('focus', onFocus);
+        window.removeEventListener('favorites-updated', onFavsUpdated as EventListener);
+      }
+    };
   }, [user]);
 
   const toggleFavoriteServer = async (bookId: string) => {
@@ -355,7 +371,8 @@ export default function FavoritesPage() {
         }
         // Refresh favorites from server for consistency
         const reload = await fetch('/api/favorites', {
-          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+          cache: 'no-store'
         });
         if (reload.ok) {
           const data = await reload.json();

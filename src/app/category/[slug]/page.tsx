@@ -74,13 +74,38 @@ export default function CategoryPage() {
   const [submitting, setSubmitting] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
-  // Load favorites from localStorage
+  // Load favorites: server for logged-in users, else localStorage
   useEffect(() => {
-    const savedFavorites = localStorage.getItem('favorites')
-    if (savedFavorites) {
-      setFavorites(JSON.parse(savedFavorites))
+    const init = async () => {
+      try {
+        if (user) {
+          const resp = await fetch('/api/favorites', {
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` },
+            cache: 'no-store'
+          })
+          if (resp.ok) {
+            const data = await resp.json()
+            const ids: string[] = (data.favorites || []).map((f: any) => f.book?.id).filter(Boolean)
+            setFavorites(ids)
+            // emit for navbar
+            if (typeof window !== 'undefined') {
+              window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: ids.length } }))
+            }
+          } else {
+            const saved = localStorage.getItem('favorites')
+            if (saved) setFavorites(JSON.parse(saved))
+          }
+        } else {
+          const saved = localStorage.getItem('favorites')
+          if (saved) setFavorites(JSON.parse(saved))
+        }
+      } catch (e) {
+        const saved = localStorage.getItem('favorites')
+        if (saved) setFavorites(JSON.parse(saved))
+      }
     }
-  }, [])
+    init()
+  }, [user])
 
   // Debounce search query
   useEffect(() => {
@@ -171,6 +196,56 @@ export default function CategoryPage() {
     localStorage.setItem('favorites', JSON.stringify(newFavorites))
     if (typeof window !== 'undefined') {
       window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: newFavorites.length } }))
+    }
+  }
+
+  const toggleFavoriteServer = async (bookId: string) => {
+    try {
+      if (!user) {
+        // guest: local toggle only
+        toggleFavorite(bookId)
+        return
+      }
+
+      const isFav = favorites.includes(bookId)
+      if (isFav) {
+        const resp = await fetch(`/api/favorites?bookId=${encodeURIComponent(bookId)}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('auth_token')}` }
+        })
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}))
+          alert(data.error || 'Failed to remove from favorites')
+          return
+        }
+        setFavorites(prev => {
+          const next = prev.filter(id => id !== bookId)
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }))
+          return next
+        })
+      } else {
+        const resp = await fetch('/api/favorites', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+          },
+          body: JSON.stringify({ bookId })
+        })
+        if (!resp.ok) {
+          const data = await resp.json().catch(() => ({}))
+          alert(data.error || 'Failed to add to favorites')
+          return
+        }
+        setFavorites(prev => {
+          const next = prev.includes(bookId) ? prev : [...prev, bookId]
+          if (typeof window !== 'undefined') window.dispatchEvent(new CustomEvent('favorites-updated', { detail: { count: next.length } }))
+          return next
+        })
+      }
+    } catch (e) {
+      console.error('Toggle favorite failed:', e)
+      alert('Failed to update favorites')
     }
   }
 
@@ -455,10 +530,10 @@ export default function CategoryPage() {
                             >
                               {book.availableCopies > 0 ? 'Request to Borrow' : 'Not Available'}
                             </button>
-                            <button
+              <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                toggleFavorite(book.id);
+                toggleFavoriteServer(book.id);
                               }}
                               className={`flex items-center justify-center gap-2 px-4 py-2 rounded-full transition-all duration-200 flex-shrink-0 ${
                                 favorites.includes(book.id)
@@ -689,7 +764,7 @@ export default function CategoryPage() {
                             </button>
                             
                             <button
-                              onClick={() => toggleFavorite(selectedBook.id)}
+                              onClick={() => toggleFavoriteServer(selectedBook.id)}
                               className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 ${
                                 favorites.includes(selectedBook.id)
                                   ? "bg-red-500 hover:bg-red-600 text-white"

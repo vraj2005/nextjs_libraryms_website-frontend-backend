@@ -23,7 +23,8 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
           return;
         }
         const resp = await fetch('/api/favorites', {
-          headers: { 'Authorization': `Bearer ${token}` }
+          headers: { 'Authorization': `Bearer ${token}` },
+          cache: 'no-store'
         });
         if (resp.ok) {
           const data = await resp.json();
@@ -66,15 +67,21 @@ export function FavoritesProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => { void refreshFavoritesCount(); }, 0);
       }
     };
+    const onFocus = () => { void refreshFavoritesCount(); };
+    const onVisibility = () => { if (document.visibilityState === 'visible') void refreshFavoritesCount(); };
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'favorites') {
         setTimeout(() => { void refreshFavoritesCount(); }, 0);
       }
     };
     window.addEventListener('favorites-updated', onFavsUpdated as EventListener);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibility);
     window.addEventListener('storage', onStorage);
     return () => {
       window.removeEventListener('favorites-updated', onFavsUpdated as EventListener);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibility);
       window.removeEventListener('storage', onStorage);
     };
   }, [refreshFavoritesCount]);
