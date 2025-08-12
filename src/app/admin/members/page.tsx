@@ -32,11 +32,11 @@ export default function AdminMembers() {
 	const [showEditModal, setShowEditModal] = useState(false);
 		const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
 		const [editForm, setEditForm] = useState({
+			username: '',
 			fullName: '',
 			email: '',
 			phone: '',
 			address: '',
-			membershipType: 'Student',
 			status: 'Active',
 		});
 	const router = useRouter();
@@ -110,11 +110,11 @@ export default function AdminMembers() {
 	const handleEditMember = (member: any) => {
 			setSelectedMember(member);
 			setEditForm({
+		username: (member.username as string) || '',
 				fullName: member.name || '',
 				email: member.email || '',
 				phone: member.phone || '',
 				address: member.address || '',
-				membershipType: member.membershipType || 'Student',
 				status: member.status || 'Active',
 			});
 			setShowEditModal(true);
@@ -125,21 +125,15 @@ export default function AdminMembers() {
 			if (!selectedMember) return;
 			try {
 				const token = localStorage.getItem('auth_token') || '';
-				// Map membershipType to role
-				const roleMap: Record<string, string> = {
-					'Premium': 'ADMIN',
-					'Standard': 'LIBRARIAN',
-					'Student': 'USER',
-				};
 				const [firstName, ...rest] = editForm.fullName.trim().split(' ');
 				const lastName = rest.join(' ');
 				const body = {
+				username: editForm.username || undefined,
 					firstName,
 					lastName,
 					email: editForm.email,
 					phone: editForm.phone,
 					address: editForm.address,
-					role: roleMap[editForm.membershipType] || 'USER',
 					isActive: editForm.status === 'Active',
 				};
 				const resp = await fetch(`/api/admin/users/${encodeURIComponent(selectedMember.userId)}`, {
@@ -159,11 +153,11 @@ export default function AdminMembers() {
 				// Update local list to reflect changes without reloading
 				setMembers(prev => prev.map(m => m.userId === selectedMember.userId ? {
 					...m,
+				username: editForm.username,
 					name: editForm.fullName,
 					email: editForm.email,
 					phone: editForm.phone,
 					address: editForm.address,
-					membershipType: editForm.membershipType,
 					status: editForm.status,
 				} : m));
 				setShowEditModal(false);
@@ -727,8 +721,17 @@ export default function AdminMembers() {
 											</svg>
 										</button>
 									</div>
-									<form className="space-y-4" onSubmit={saveEditMember}>
+													<form className="space-y-4" onSubmit={saveEditMember}>
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+															<div>
+																<label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
+																<input
+																	type="text"
+																	value={editForm.username}
+																	onChange={(e) => setEditForm(f => ({ ...f, username: e.target.value }))}
+																	className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+																/>
+															</div>
 											<div>
 												<label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
 												<input
@@ -757,18 +760,6 @@ export default function AdminMembers() {
 													onChange={(e) => setEditForm(f => ({ ...f, phone: e.target.value }))}
 													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
 												/>
-											</div>
-											<div>
-												<label className="block text-sm font-medium text-gray-700 mb-2">Membership Type</label>
-												<select
-													value={editForm.membershipType}
-													onChange={(e) => setEditForm(f => ({ ...f, membershipType: e.target.value }))}
-													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-												>
-													<option value="Student">Student</option>
-													<option value="Standard">Standard</option>
-													<option value="Premium">Premium</option>
-												</select>
 											</div>
 											<div className="md:col-span-2">
 												<label className="block text-sm font-medium text-gray-700 mb-2">Address</label>

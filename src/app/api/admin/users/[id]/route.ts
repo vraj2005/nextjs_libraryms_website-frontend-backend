@@ -21,7 +21,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const body = await request.json()
     // Allow editing basic fields only
-    const { firstName, lastName, email, phone, address, role, isActive } = body
+  const { username, firstName, lastName, email, phone, address, role, isActive } = body
 
     // Validate role (optional)
     const allowedRoles = ['ADMIN', 'LIBRARIAN', 'USER']
@@ -32,7 +32,8 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     const updated = await prisma.user.update({
       where: { id },
       data: {
-        firstName: firstName ?? undefined,
+  username: username ?? undefined,
+  firstName: firstName ?? undefined,
         lastName: lastName ?? undefined,
         email: email ?? undefined,
         phone: phone ?? undefined,

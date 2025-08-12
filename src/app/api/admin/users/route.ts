@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
         userId: u.id,
         id: idx + 1, // sequential ID for UI table
         membershipId,
+        username: u.username,
         name: name || u.username || u.email,
         email: u.email,
         phone: u.phone || '',
