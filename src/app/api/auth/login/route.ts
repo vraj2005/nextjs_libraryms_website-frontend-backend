@@ -41,6 +41,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Block login if user is inactive
+    if (!user.isActive) {
+      console.log('⛔ Access denied: user is inactive')
+      return NextResponse.json(
+        { error: 'Access denied' },
+        { status: 403 }
+      )
+    }
+
     // Generate JWT token
     const token = generateToken({
       userId: user.id,
