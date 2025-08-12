@@ -32,6 +32,7 @@ export default function AdminMembers() {
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
 		const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
+		const [suspendLoadingId, setSuspendLoadingId] = useState<string | null>(null);
 		const [editForm, setEditForm] = useState({
 			username: '',
 			fullName: '',
@@ -171,14 +172,32 @@ export default function AdminMembers() {
 			}
 		};
 
-	const handleSuspendMember = (memberId: number) => {
-		setMembers(
-			members.map((member) =>
-				member.id === memberId
-					? { ...member, status: member.status === "Suspended" ? "Active" : "Suspended" }
-					: member
-			)
-		);
+	const handleSuspendMember = async (member: MemberRow) => {
+		try {
+			setSuspendLoadingId(member.userId);
+			const token = localStorage.getItem('auth_token') || '';
+			const newStatus = member.status === 'Suspended' ? 'Active' : 'Suspended';
+			const resp = await fetch(`/api/admin/users/${encodeURIComponent(member.userId)}`, {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+					'Authorization': `Bearer ${token}`
+				},
+				cache: 'no-store',
+				body: JSON.stringify({ isActive: newStatus === 'Active' })
+			});
+			if (!resp.ok) {
+				const data = await resp.json().catch(() => ({}));
+				alert(data.error || 'Failed to update status');
+				return;
+			}
+			setMembers(prev => prev.map(m => m.userId === member.userId ? { ...m, status: newStatus } : m));
+		} catch (e) {
+			console.error('Suspend/Activate failed', e);
+			alert('Failed to update status');
+		} finally {
+			setSuspendLoadingId(null);
+		}
 	};
 
 	if (!isAuthenticated) {
@@ -523,16 +542,17 @@ export default function AdminMembers() {
 													Edit
 												</button>
 												<button
-													onClick={() => handleSuspendMember(member.id)}
+													onClick={() => handleSuspendMember(member)}
+													disabled={suspendLoadingId === member.userId}
 													className={`transition-colors ${
 														member.status === "Suspended"
 															? "text-green-600 hover:text-green-900"
 															: "text-yellow-600 hover:text-yellow-900"
-													}`}
+													} ${suspendLoadingId === member.userId ? 'opacity-50 cursor-not-allowed' : ''}`}
 												>
-													{member.status === "Suspended"
-														? "Activate"
-														: "Suspend"}
+													{ suspendLoadingId === member.userId
+														? 'Saving...'
+														: (member.status === "Suspended" ? "Activate" : "Suspend") }
 												</button>
 												<button
 													onClick={() => handleDeleteMember(member.id)}
