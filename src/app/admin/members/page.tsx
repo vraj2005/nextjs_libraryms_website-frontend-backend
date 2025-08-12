@@ -3,88 +3,26 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-// Sample members data
-const allMembers = [
-	{
-		id: 1,
-		membershipId: "LIB001",
-		name: "Alice Johnson",
-		email: "alice.johnson@email.com",
-		phone: "+91 9876543210",
-		address: "123 Main St, City",
-		membershipType: "Premium",
-		status: "Active",
-		joinDate: "2023-01-15",
-		expiryDate: "2024-01-15",
-		booksIssued: 3,
-		fineAmount: 0,
-		lastActivity: "2024-07-20",
-	},
-	{
-		id: 2,
-		membershipId: "LIB002",
-		name: "Robert Smith",
-		email: "robert.smith@email.com",
-		phone: "+91 9876543211",
-		address: "456 Oak St, City",
-		membershipType: "Standard",
-		status: "Active",
-		joinDate: "2023-03-20",
-		expiryDate: "2024-03-20",
-		booksIssued: 2,
-		fineAmount: 50,
-		lastActivity: "2024-07-19",
-	},
-	{
-		id: 3,
-		membershipId: "LIB003",
-		name: "Sarah Davis",
-		email: "sarah.davis@email.com",
-		phone: "+91 9876543212",
-		address: "789 Pine St, City",
-		membershipType: "Student",
-		status: "Suspended",
-		joinDate: "2023-06-10",
-		expiryDate: "2024-06-10",
-		booksIssued: 1,
-		fineAmount: 150,
-		lastActivity: "2024-07-15",
-	},
-	{
-		id: 4,
-		membershipId: "LIB004",
-		name: "Mike Wilson",
-		email: "mike.wilson@email.com",
-		phone: "+91 9876543213",
-		address: "321 Elm St, City",
-		membershipType: "Premium",
-		status: "Active",
-		joinDate: "2023-09-05",
-		expiryDate: "2024-09-05",
-		booksIssued: 5,
-		fineAmount: 25,
-		lastActivity: "2024-07-21",
-	},
-	{
-		id: 5,
-		membershipId: "LIB005",
-		name: "Emma Brown",
-		email: "emma.brown@email.com",
-		phone: "+91 9876543214",
-		address: "654 Maple St, City",
-		membershipType: "Standard",
-		status: "Expired",
-		joinDate: "2022-12-01",
-		expiryDate: "2023-12-01",
-		booksIssued: 0,
-		fineAmount: 0,
-		lastActivity: "2023-11-28",
-	},
-];
+// Members will be fetched from the database via API
+type MemberRow = {
+	id: number;
+	membershipId: string;
+	name: string;
+	email: string;
+	phone: string;
+	address: string;
+	membershipType: string;
+	status: 'Active' | 'Suspended' | 'Expired' | string;
+	joinDate: string;
+	expiryDate: string;
+	booksIssued: number;
+	fineAmount: number;
+	lastActivity: string;
+}
 
 export default function AdminMembers() {
 	const [isAuthenticated, setIsAuthenticated] = useState(false);
-	const [members, setMembers] = useState(allMembers);
+	const [members, setMembers] = useState<MemberRow[]>([]);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedStatus, setSelectedStatus] = useState("all");
 	const [selectedMembershipType, setSelectedMembershipType] = useState("all");
@@ -107,6 +45,26 @@ export default function AdminMembers() {
 			return;
 		}
 		setIsAuthenticated(true);
+
+		// Load members from API without altering the UI design
+		const loadMembers = async () => {
+			try {
+				const token = localStorage.getItem('auth_token') || '';
+				const resp = await fetch('/api/admin/users', {
+					headers: { 'Authorization': `Bearer ${token}` },
+					cache: 'no-store'
+				});
+				if (resp.ok) {
+					const data = await resp.json();
+					setMembers(Array.isArray(data.users) ? data.users : []);
+				} else {
+					setMembers([]);
+				}
+			} catch {
+				setMembers([]);
+			}
+		};
+		void loadMembers();
 	}, [router]);
 
 	// Filter and search members
