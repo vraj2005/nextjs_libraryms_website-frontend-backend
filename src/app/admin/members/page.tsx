@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 // Members will be fetched from the database via API
 type MemberRow = {
+	userId: string;
 	id: number;
 	membershipId: string;
 	name: string;
@@ -29,7 +30,15 @@ export default function AdminMembers() {
 	const [currentPage, setCurrentPage] = useState(1);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
-	const [selectedMember, setSelectedMember] = useState<any>(null);
+		const [selectedMember, setSelectedMember] = useState<MemberRow | null>(null);
+		const [editForm, setEditForm] = useState({
+			fullName: '',
+			email: '',
+			phone: '',
+			address: '',
+			membershipType: 'Student',
+			status: 'Active',
+		});
 	const router = useRouter();
 
 	const membersPerPage = 10;
@@ -99,9 +108,71 @@ export default function AdminMembers() {
 	};
 
 	const handleEditMember = (member: any) => {
-		setSelectedMember(member);
-		setShowEditModal(true);
+			setSelectedMember(member);
+			setEditForm({
+				fullName: member.name || '',
+				email: member.email || '',
+				phone: member.phone || '',
+				address: member.address || '',
+				membershipType: member.membershipType || 'Student',
+				status: member.status || 'Active',
+			});
+			setShowEditModal(true);
 	};
+
+		const saveEditMember = async (e: React.FormEvent) => {
+			e.preventDefault();
+			if (!selectedMember) return;
+			try {
+				const token = localStorage.getItem('auth_token') || '';
+				// Map membershipType to role
+				const roleMap: Record<string, string> = {
+					'Premium': 'ADMIN',
+					'Standard': 'LIBRARIAN',
+					'Student': 'USER',
+				};
+				const [firstName, ...rest] = editForm.fullName.trim().split(' ');
+				const lastName = rest.join(' ');
+				const body = {
+					firstName,
+					lastName,
+					email: editForm.email,
+					phone: editForm.phone,
+					address: editForm.address,
+					role: roleMap[editForm.membershipType] || 'USER',
+					isActive: editForm.status === 'Active',
+				};
+				const resp = await fetch(`/api/admin/users/${encodeURIComponent(selectedMember.userId)}`, {
+					method: 'PUT',
+					headers: {
+						'Content-Type': 'application/json',
+						'Authorization': `Bearer ${token}`
+					},
+					cache: 'no-store',
+					body: JSON.stringify(body)
+				});
+				const data = await resp.json();
+				if (!resp.ok) {
+					alert(data.error || 'Failed to update member');
+					return;
+				}
+				// Update local list to reflect changes without reloading
+				setMembers(prev => prev.map(m => m.userId === selectedMember.userId ? {
+					...m,
+					name: editForm.fullName,
+					email: editForm.email,
+					phone: editForm.phone,
+					address: editForm.address,
+					membershipType: editForm.membershipType,
+					status: editForm.status,
+				} : m));
+				setShowEditModal(false);
+				setSelectedMember(null);
+			} catch (err) {
+				console.error('Edit member failed', err);
+				alert('Failed to update member');
+			}
+		};
 
 	const handleSuspendMember = (memberId: number) => {
 		setMembers(
@@ -654,6 +725,95 @@ export default function AdminMembers() {
 					</div>
 				</div>
 			)}
+
+					{/* Edit Member Modal */}
+					{showEditModal && selectedMember && (
+						<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+							<div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
+								<div className="mt-3">
+									<div className="flex justify-between items-center mb-4">
+										<h3 className="text-lg font-medium text-gray-900">Edit Member</h3>
+										<button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+											<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+												<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+											</svg>
+										</button>
+									</div>
+									<form className="space-y-4" onSubmit={saveEditMember}>
+										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+											<div>
+												<label className="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+												<input
+													type="text"
+													value={editForm.fullName}
+													onChange={(e) => setEditForm(f => ({ ...f, fullName: e.target.value }))}
+													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+													required
+												/>
+											</div>
+											<div>
+												<label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
+												<input
+													type="email"
+													value={editForm.email}
+													onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))}
+													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+													required
+												/>
+											</div>
+											<div>
+												<label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
+												<input
+													type="tel"
+													value={editForm.phone}
+													onChange={(e) => setEditForm(f => ({ ...f, phone: e.target.value }))}
+													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+												/>
+											</div>
+											<div>
+												<label className="block text-sm font-medium text-gray-700 mb-2">Membership Type</label>
+												<select
+													value={editForm.membershipType}
+													onChange={(e) => setEditForm(f => ({ ...f, membershipType: e.target.value }))}
+													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+												>
+													<option value="Student">Student</option>
+													<option value="Standard">Standard</option>
+													<option value="Premium">Premium</option>
+												</select>
+											</div>
+											<div className="md:col-span-2">
+												<label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+												<textarea
+													rows={3}
+													value={editForm.address}
+													onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))}
+													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+												/>
+											</div>
+											<div className="md:col-span-2">
+												<label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+												<div className="flex items-center gap-4">
+													<label className="inline-flex items-center gap-2">
+														<input type="radio" name="status" checked={editForm.status === 'Active'} onChange={() => setEditForm(f => ({ ...f, status: 'Active' }))} />
+														<span>Active</span>
+													</label>
+													<label className="inline-flex items-center gap-2">
+														<input type="radio" name="status" checked={editForm.status === 'Suspended'} onChange={() => setEditForm(f => ({ ...f, status: 'Suspended' }))} />
+														<span>Suspended</span>
+													</label>
+												</div>
+											</div>
+										</div>
+										<div className="flex justify-end space-x-3 pt-4">
+											<button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
+											<button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Changes</button>
+										</div>
+									</form>
+								</div>
+							</div>
+						</div>
+					)}
 		</div>
 	);
 }

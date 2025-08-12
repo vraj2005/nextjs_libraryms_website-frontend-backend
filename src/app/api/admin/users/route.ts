@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
       orderBy: { createdAt: 'desc' }
     })
 
-    const mapped = users.map((u, idx) => {
+  const mapped = users.map((u, idx) => {
       const booksIssued = u.borrowRequests.filter(br => br.status !== 'RETURNED' && br.status !== 'REJECTED').length
       const fineAmount = u.fines.filter(f => !f.isPaid).reduce((sum, f) => sum + (f.amount || 0), 0)
       const lastDates: Date[] = []
@@ -50,6 +50,7 @@ export async function GET(request: NextRequest) {
       const format = (d: Date) => d.toISOString().slice(0, 10)
 
       return {
+        userId: u.id,
         id: idx + 1, // sequential ID for UI table
         membershipId,
         name: name || u.username || u.email,
