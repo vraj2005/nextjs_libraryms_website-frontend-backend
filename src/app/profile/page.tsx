@@ -98,8 +98,8 @@ export default function Profile() {
       try {
         setLoading(true);
         
-        // Get token from localStorage - check both possible keys
-        const token = localStorage.getItem('token') || localStorage.getItem('auth_token');
+  // Get token from localStorage - prefer current key, fallback to legacy
+  const token = localStorage.getItem('auth_token') || localStorage.getItem('token');
         
         console.log('Profile page: Checking authentication...');
         console.log('Token found:', token ? 'Yes' : 'No');
@@ -124,7 +124,9 @@ export default function Profile() {
 
         if (!response.ok) {
           if (response.status === 401) {
-            console.log('Token invalid, logging out...');
+            console.log('Token invalid, cleaning up and logging out...');
+            // Remove any stale legacy token key to avoid future bad reads
+            try { localStorage.removeItem('token'); } catch {}
             logout();
             router.push('/login');
             return;
@@ -171,6 +173,8 @@ export default function Profile() {
         // Otherwise, try to use fallback data
         if (!user) {
           console.log('No user context and API failed, redirecting to login');
+          // Also remove any stale legacy token key
+          try { localStorage.removeItem('token'); } catch {}
           router.push('/login');
           return;
         }
