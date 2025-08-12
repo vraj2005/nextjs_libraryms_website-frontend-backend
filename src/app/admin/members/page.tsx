@@ -436,19 +436,16 @@ export default function AdminMembers() {
 										Member
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Contact
+										Email
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Membership
+										Contact Number
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 										Status
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 										Books/Fines
-									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Last Activity
 									</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 										Actions
@@ -484,16 +481,10 @@ export default function AdminMembers() {
 											<div className="text-sm text-gray-900">
 												{member.email}
 											</div>
-											<div className="text-sm text-gray-500">
-												{member.phone}
-											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
 											<div className="text-sm text-gray-900">
-												{member.membershipType}
-											</div>
-											<div className="text-sm text-gray-500">
-												Expires: {member.expiryDate}
+												{member.phone || '-'}
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
@@ -520,9 +511,6 @@ export default function AdminMembers() {
 											>
 												Fine: ₹{member.fineAmount}
 											</div>
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-											{member.lastActivity}
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
 											<div className="flex space-x-2">
