@@ -105,9 +105,29 @@ export default function AdminMembers() {
 		startIndex + membersPerPage
 	);
 
-	const handleDeleteMember = (memberId: number) => {
-		if (confirm("Are you sure you want to delete this member?")) {
-			setMembers(members.filter((member) => member.id !== memberId));
+	const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+
+	const handleDeleteMember = async (member: MemberRow) => {
+		if (!confirm('Are you sure you want to delete this member? This cannot be undone.')) return;
+		try {
+			setDeleteLoadingId(member.userId);
+			const token = localStorage.getItem('auth_token') || '';
+			const resp = await fetch(`/api/admin/users/${encodeURIComponent(member.userId)}`, {
+				method: 'DELETE',
+				headers: { 'Authorization': `Bearer ${token}` },
+				cache: 'no-store'
+			});
+			if (!resp.ok) {
+				const data = await resp.json().catch(() => ({}));
+				alert(data.error || 'Failed to delete member');
+				return;
+			}
+			setMembers(prev => prev.filter(m => m.userId !== member.userId));
+		} catch (e) {
+			console.error('Delete member failed', e);
+			alert('Failed to delete member');
+		} finally {
+			setDeleteLoadingId(null);
 		}
 	};
 
@@ -555,10 +575,11 @@ export default function AdminMembers() {
 														: (member.status === "Suspended" ? "Activate" : "Suspend") }
 												</button>
 												<button
-													onClick={() => handleDeleteMember(member.id)}
-													className="text-red-600 hover:text-red-900 transition-colors"
+													onClick={() => handleDeleteMember(member)}
+													disabled={deleteLoadingId === member.userId}
+													className={`text-red-600 hover:text-red-900 transition-colors ${deleteLoadingId === member.userId ? 'opacity-50 cursor-not-allowed' : ''}`}
 												>
-													Delete
+													{deleteLoadingId === member.userId ? 'Deleting...' : 'Delete'}
 												</button>
 											</div>
 										</td>

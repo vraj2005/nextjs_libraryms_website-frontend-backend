@@ -50,3 +50,27 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
     return NextResponse.json({ error: 'Failed to update user' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
   }
 }
+
+export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const authHeader = request.headers.get('authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401, headers: { 'Cache-Control': 'no-store' } })
+    }
+    const token = authHeader.substring(7)
+    const currentUser = await getUserFromToken(token)
+    if (!currentUser || (currentUser.role !== 'ADMIN' && currentUser.role !== 'LIBRARIAN')) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403, headers: { 'Cache-Control': 'no-store' } })
+    }
+
+    const id = params.id
+    if (!id) return NextResponse.json({ error: 'User id required' }, { status: 400, headers: { 'Cache-Control': 'no-store' } })
+
+    await prisma.user.delete({ where: { id } })
+
+    return NextResponse.json({ success: true }, { headers: { 'Cache-Control': 'no-store' } })
+  } catch (error) {
+    console.error('Admin user DELETE error:', error)
+    return NextResponse.json({ error: 'Failed to delete user' }, { status: 500, headers: { 'Cache-Control': 'no-store' } })
+  }
+}
