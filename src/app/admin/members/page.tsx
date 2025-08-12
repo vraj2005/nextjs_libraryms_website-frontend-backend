@@ -8,6 +8,7 @@ type MemberRow = {
 	userId: string;
 	id: number;
 	membershipId: string;
+	username?: string;
 	name: string;
 	email: string;
 	phone: string;
@@ -78,11 +79,13 @@ export default function AdminMembers() {
 
 	// Filter and search members
 	const filteredMembers = members.filter((member) => {
-		const matchesSearch =
-			member.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			member.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			member.membershipId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-			member.phone.includes(searchQuery);
+			const q = searchQuery.toLowerCase();
+			const matchesSearch =
+				member.name.toLowerCase().includes(q) ||
+				member.email.toLowerCase().includes(q) ||
+				(member.username ? member.username.toLowerCase().includes(q) : false) ||
+				member.membershipId.toLowerCase().includes(q) ||
+				member.phone.includes(searchQuery);
 
 		const matchesStatus =
 			selectedStatus === "all" || member.status === selectedStatus;
@@ -426,9 +429,12 @@ export default function AdminMembers() {
 						<table className="min-w-full divide-y divide-gray-200">
 							<thead className="bg-gray-50">
 								<tr>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Member
-									</th>
+									  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+											Member
+										</th>
+										<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+											Username
+										</th>
 									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
 										Email
 									</th>
@@ -465,10 +471,12 @@ export default function AdminMembers() {
 													<div className="text-sm font-medium text-gray-900">
 														{member.name}
 													</div>
-													<div className="text-sm text-gray-500">
-														{member.membershipId}
-													</div>
 												</div>
+											</div>
+										</td>
+										<td className="px-6 py-4 whitespace-nowrap">
+											<div className="text-sm text-gray-900">
+												{member.username || '-'}
 											</div>
 										</td>
 										<td className="px-6 py-4 whitespace-nowrap">
