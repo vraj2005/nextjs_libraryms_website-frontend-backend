@@ -16,6 +16,8 @@ interface BorrowRequest {
     name: string;
     email: string;
     username?: string;
+    firstName?: string;
+    lastName?: string;
   };
   book: {
     id: string;
@@ -204,7 +206,13 @@ export default function AdminBorrowRequestsPage() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Member
+                      FullName
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Username
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Email
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Book
@@ -227,13 +235,15 @@ export default function AdminBorrowRequestsPage() {
                   {requests.map((request) => (
                     <tr key={request.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div>
-                          <div className="text-sm font-medium text-gray-900">{request.user.name}</div>
-                          <div className="text-sm text-gray-900">{request.user.email}</div>
-                          {request.user.username && (
-                            <div className="text-xs text-blue-700">Username: {request.user.username}</div>
-                          )}
+                        <div className="text-sm font-medium text-gray-900">
+                          {`${request.user.firstName ?? ''} ${request.user.lastName ?? ''}`.trim() || request.user.name}
                         </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-blue-700">{request.user.username || '-'}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{request.user.email}</div>
                       </td>
                       <td className="px-6 py-4">
                         <div>
