@@ -15,7 +15,7 @@ interface BorrowRequest {
     id: string;
     name: string;
     email: string;
-    membershipId: string;
+    username?: string;
   };
   book: {
     id: string;
@@ -230,7 +230,9 @@ export default function AdminBorrowRequestsPage() {
                         <div>
                           <div className="text-sm font-medium text-gray-900">{request.user.name}</div>
                           <div className="text-sm text-gray-900">{request.user.email}</div>
-                          <div className="text-xs text-black">ID: {request.user.membershipId}</div>
+                          {request.user.username && (
+                            <div className="text-xs text-blue-700">Username: {request.user.username}</div>
+                          )}
                         </div>
                       </td>
                       <td className="px-6 py-4">
