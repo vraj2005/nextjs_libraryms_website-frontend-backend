@@ -256,7 +256,7 @@ export default function AdminBorrowRequestsPage() {
                         {new Date(request.requestDate).toLocaleDateString()}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {request.requestedDays} days
+                        15 days
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${getStatusColor(request.status)}`}>{request.status}</span>
@@ -328,7 +328,7 @@ export default function AdminBorrowRequestsPage() {
 
       {/* Response Modal */}
       {responseModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/10 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
               {responseModal.action} Borrow Request
