@@ -287,6 +287,18 @@ export default function Navigation() {
                     </svg>
                     <span className="group-hover/item:text-green-600 transition-colors duration-200">My Books</span>
                   </Link>
+                  {user && user.role === 'ADMIN' && (
+                    <Link
+                      href="/admin"
+                      className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-amber-400"
+                      onClick={closeAccountDropdown}
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-amber-600">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v4a1 1 0 001 1h3v7h10v-7h3a1 1 0 001-1V7M8 10V6h8v4" />
+                      </svg>
+                      <span className="group-hover/item:text-amber-600 transition-colors duration-200">Admin Dashboard</span>
+                    </Link>
+                  )}
                   <button
                     onClick={handleLogout}
                     className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-red-50 text-sky-700 hover:text-red-600 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-red-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-red-400 w-full text-left"
@@ -397,6 +409,24 @@ export default function Navigation() {
             >
               Contact
             </Link>
+            {user && user.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="block px-3 py-2 rounded-xl text-sky-700 font-semibold hover:bg-sky-100 hover:text-sky-900 transition-all duration-200 shadow-sm text-sm"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Admin Dashboard
+              </Link>
+            )}
+            {user && user.role === 'ADMIN' && (
+              <Link
+                href="/admin"
+                className="block px-3 py-2 rounded-xl bg-amber-500 text-white font-semibold hover:bg-amber-600 transition-all duration-200 shadow-sm text-sm"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Admin Dashboard
+              </Link>
+            )}
           </div>
         </div>
       )}
