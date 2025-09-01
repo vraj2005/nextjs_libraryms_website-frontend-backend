@@ -1,212 +1,225 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 
-interface Book {
+// Types aligned with Prisma schema
+interface CategoryOption { id: string; name: string; }
+interface BookRecord {
 	id: string;
+	isbn: string;
 	title: string;
 	author: string;
-	category: string;
-	image: string;
-	rating?: number;
-	status?: string;
-	description?: string;
-	publishYear?: number;
-	isbn: string;
-	pages?: number;
-	language?: string;
-	publisher?: string;
-	edition?: string;
-	subjects?: string[];
-	availability?: {
-		total: number;
-		available: number;
-		borrowed: number;
-		reserved: number;
-	};
-	location?: string;
-	callNumber?: string;
-	format?: string;
-	price?: string;
-	totalCopies?: number;
-	availableCopies?: number;
-	borrowedCopies?: number;
-	reservedCopies?: number;
-	copies?: number;
-	available?: number;
-	borrowed?: number;
-	reserved?: number;
+	description?: string | null;
+	categoryId: string;
+	category: { id: string; name: string };
+	image?: string | null;
+	totalCopies: number;
+	availableCopies: number;
+	publishedYear?: number | null;
+	publisher?: string | null;
+	isActive: boolean;
+	isFeatured: boolean;
+	createdAt: string;
+	updatedAt: string;
 }
+
+type EditableFields = Partial<Pick<BookRecord, "title" | "author" | "description" | "categoryId" | "image" | "totalCopies" | "publishedYear" | "publisher" | "isFeatured" | "isActive" >>;
 
 export default function AdminBooks() {
 	const { token } = useAuth();
-	const [books, setBooks] = useState<Book[]>([]);
+	const [books, setBooks] = useState<BookRecord[]>([]);
+	const [categories, setCategories] = useState<CategoryOption[]>([]);
 	const [searchQuery, setSearchQuery] = useState("");
 	const [selectedCategory, setSelectedCategory] = useState("all");
-	const [selectedStatus, setSelectedStatus] = useState("all");
+	const [selectedStatus, setSelectedStatus] = useState("all"); // all | available | unavailable
 	const [sortBy, setSortBy] = useState("title");
 	const [currentPage, setCurrentPage] = useState(1);
 	const [showAddModal, setShowAddModal] = useState(false);
 	const [showEditModal, setShowEditModal] = useState(false);
-	const [selectedBook, setSelectedBook] = useState<Book | null>(null);
+	const [selectedBook, setSelectedBook] = useState<BookRecord | null>(null);
 	const [loading, setLoading] = useState(true);
-	const [form, setForm] = useState<Partial<Book>>({});
-	const router = useRouter();
-
+	const [submitting, setSubmitting] = useState(false);
+	const [form, setForm] = useState<EditableFields>({});
 	const booksPerPage = 10;
 
-	// Fetch books from API
+	// Initial load: fetch categories & books
 	useEffect(() => {
-		const fetchBooks = async () => {
+		const load = async () => {
 			setLoading(true);
 			try {
-				const res = await fetch(
-					`/api/books?sortBy=${sortBy}&search=${searchQuery}&category=${selectedCategory}&status=${selectedStatus}`
-				);
-				const data = await res.json();
-				setBooks(data.books || []);
-			} catch (e) {
+				const [catRes, bookRes] = await Promise.all([
+					fetch("/api/categories"),
+					// Fetch a large limit to approximate "all"
+					fetch(`/api/books?limit=1000&sortBy=${sortBy}&sortOrder=asc`)
+				]);
+				const catData = await catRes.json();
+				const bookData = await bookRes.json();
+				if (catData.categories) setCategories(catData.categories);
+				if (bookData.books) setBooks(bookData.books);
+			} catch (err) {
+				console.error("Failed to load books/categories", err);
 				setBooks([]);
 			} finally {
 				setLoading(false);
 			}
 		};
-		fetchBooks();
-	}, [searchQuery, selectedCategory, selectedStatus, sortBy]);
+		load();
+	}, [sortBy]);
 
-	// Categories for filter
-	const categories = [
-		"all",
-		"Fiction",
-		"Non-Fiction", 
-		"Science",
-		"Technology",
-		"History",
-		"Biography",
-		"Education",
-		...Array.from(new Set(books.map(book => book.category))).filter(
-			cat => cat && !["Fiction", "Non-Fiction", "Science", "Technology", "History", "Biography", "Education"].includes(cat)
-		),
-	];
+	// Derived filtered books
+	const filteredBooks = useMemo(() => {
+		let list = [...books];
+		if (searchQuery.trim()) {
+			const q = searchQuery.toLowerCase();
+			list = list.filter(b =>
+				b.title.toLowerCase().includes(q) ||
+				b.author.toLowerCase().includes(q) ||
+				b.isbn.toLowerCase().includes(q) ||
+				(b.publisher?.toLowerCase().includes(q) ?? false)
+			);
+		}
+		if (selectedCategory !== "all") {
+			list = list.filter(b => b.categoryId === selectedCategory);
+		}
+		if (selectedStatus !== "all") {
+			if (selectedStatus === "available") list = list.filter(b => b.availableCopies > 0);
+			if (selectedStatus === "unavailable") list = list.filter(b => b.availableCopies === 0);
+		}
+		// local sort (API sorts by base field already but we may adjust)
+		list.sort((a, b) => {
+			switch (sortBy) {
+				case "author": return a.author.localeCompare(b.author);
+				case "category": return a.category.name.localeCompare(b.category.name);
+				case "createdAt": return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+				default: return a.title.localeCompare(b.title);
+			}
+		});
+		return list;
+	}, [books, searchQuery, selectedCategory, selectedStatus, sortBy]);
 
-	// Filtered and paginated books
-	const filteredBooks = books;
-	const totalPages = Math.ceil(filteredBooks.length / booksPerPage);
+	const totalPages = Math.ceil(filteredBooks.length / booksPerPage) || 1;
 	const startIndex = (currentPage - 1) * booksPerPage;
-	const paginatedBooks = filteredBooks.slice(
-		startIndex,
-		startIndex + booksPerPage
-	);
+	const paginatedBooks = filteredBooks.slice(startIndex, startIndex + booksPerPage);
 
-	// CRUD handlers
+	const resetForm = () => setForm({ title: "", author: "", categoryId: "" });
+
+	// CRUD operations
 	const handleAddBook = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!form.title || !form.author || !form.isbn) {
-			alert("Please fill in all required fields");
+		if (!form.title || !form.author || !form.categoryId) {
+			alert("Title, Author & Category required");
 			return;
 		}
-		
+		setSubmitting(true);
 		try {
-			const bookData = {
-				...form,
-				copies: Number(form.copies) || 1,
-				available: Number(form.copies) || 1,
-				borrowed: 0,
-				reserved: 0,
-				image: "/book-1.svg" // Default image
-			};
-
 			const res = await fetch("/api/books", {
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+					Authorization: `Bearer ${token}`
 				},
-				body: JSON.stringify(bookData),
+				body: JSON.stringify({
+					title: form.title,
+						author: form.author,
+						description: form.description ?? undefined,
+						categoryId: form.categoryId,
+						image: form.image ?? undefined,
+						totalCopies: form.totalCopies ? Number(form.totalCopies) : 1,
+						publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
+						publisher: form.publisher ?? undefined,
+						isFeatured: form.isFeatured ?? false
+				})
 			});
-
-			if (res.ok) {
-				const data = await res.json();
-				setBooks(prev => [data.book, ...prev]);
-				setShowAddModal(false);
-				setForm({});
-				alert("Book added successfully!");
-			} else {
-				alert("Failed to add book");
-			}
-		} catch (error) {
-			alert("Error adding book");
-		}
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || "Failed to create book");
+			setBooks(prev => [data.book, ...prev]);
+			setShowAddModal(false);
+			resetForm();
+		} catch (err: any) {
+			alert(err.message);
+		} finally { setSubmitting(false); }
 	};
 
-	const handleEditBook = (book: Book) => {
+	const handleEditBook = (book: BookRecord) => {
 		setSelectedBook(book);
-		setForm({ ...book });
+		setForm({
+			title: book.title,
+			author: book.author,
+			description: book.description ?? "",
+			categoryId: book.categoryId,
+			image: book.image ?? "",
+			totalCopies: book.totalCopies,
+			publishedYear: book.publishedYear ?? undefined,
+			publisher: book.publisher ?? "",
+			isFeatured: book.isFeatured,
+			isActive: book.isActive
+		});
 		setShowEditModal(true);
 	};
 
 	const handleUpdateBook = async (e: React.FormEvent) => {
 		e.preventDefault();
-		if (!form.title || !form.author || !form.isbn) {
-			alert("Please fill in all required fields");
+		if (!selectedBook) return;
+		if (!form.title || !form.author || !form.categoryId) {
+			alert("Title, Author & Category required");
 			return;
 		}
-
+		setSubmitting(true);
 		try {
-			const res = await fetch("/api/books", {
+			const res = await fetch(`/api/books/${selectedBook.id}`, {
 				method: "PUT",
 				headers: {
 					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
+					Authorization: `Bearer ${token}`
 				},
-				body: JSON.stringify({ ...form, copies: Number(form.copies) || 1 }),
+				body: JSON.stringify({
+					title: form.title,
+					author: form.author,
+					description: form.description ?? null,
+					categoryId: form.categoryId,
+					image: form.image ?? null,
+					totalCopies: form.totalCopies ? Number(form.totalCopies) : undefined,
+					publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
+					publisher: form.publisher ?? null,
+					isFeatured: form.isFeatured,
+					isActive: form.isActive
+				})
 			});
-
-			if (res.ok) {
-				const data = await res.json();
-				setBooks(prev => prev.map(b => b.id === data.book.id ? data.book : b));
-				setShowEditModal(false);
-				setForm({});
-				alert("Book updated successfully!");
-			} else {
-				alert("Failed to update book");
-			}
-		} catch (error) {
-			alert("Error updating book");
-		}
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || "Failed to update book");
+			setBooks(prev => prev.map(b => b.id === data.book.id ? data.book : b));
+			setShowEditModal(false);
+			setSelectedBook(null);
+			resetForm();
+		} catch (err: any) {
+			alert(err.message);
+		} finally { setSubmitting(false); }
 	};
 
 	const handleDeleteBook = async (id: string) => {
-		if (!confirm("Are you sure you want to delete this book?")) return;
-
+		if (!confirm("Delete this book?")) return;
 		try {
-			const res = await fetch("/api/books", {
+			const res = await fetch(`/api/books/${id}`, {
 				method: "DELETE",
-				headers: {
-					"Content-Type": "application/json",
-					Authorization: `Bearer ${token}`,
-				},
-				body: JSON.stringify({ id }),
+				headers: { Authorization: `Bearer ${token}` }
 			});
-
-			if (res.ok) {
-				setBooks(prev => prev.filter(b => b.id !== id));
-				alert("Book deleted successfully!");
-			} else {
-				alert("Failed to delete book");
-			}
-		} catch (error) {
-			alert("Error deleting book");
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || "Failed to delete");
+			setBooks(prev => prev.filter(b => b.id !== id));
+		} catch (err: any) {
+			alert(err.message);
 		}
 	};
+
+	const availableSum = books.reduce((sum, b) => sum + b.availableCopies, 0);
+	const borrowedSum = books.reduce((sum, b) => sum + (b.totalCopies - b.availableCopies), 0);
 
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-gray-100 flex items-center justify-center">
-				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+				<div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600" />
 			</div>
 		);
 	}
@@ -224,11 +237,11 @@ export default function AdminBooks() {
 							Manage your library&apos;s book collection
 						</p>
 					</div>
-					<button
-						onClick={() => {
-							setForm({});
-							setShowAddModal(true);
-						}}
+						<button
+							onClick={() => {
+								resetForm();
+								setShowAddModal(true);
+							}}
 						className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2"
 					>
 						<svg
@@ -302,9 +315,7 @@ export default function AdminBooks() {
 								<p className="text-sm font-medium text-gray-500">
 									Available
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
-									{books.reduce((sum, book) => sum + (book.available ?? 0), 0)}
-								</p>
+								<p className="text-2xl font-bold text-gray-900">{availableSum}</p>
 							</div>
 						</div>
 					</div>
@@ -332,9 +343,7 @@ export default function AdminBooks() {
 								<p className="text-sm font-medium text-gray-500">
 									Borrowed
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
-									{books.reduce((sum, book) => sum + (book.borrowed ?? 0), 0)}
-								</p>
+								<p className="text-2xl font-bold text-gray-900">{borrowedSum}</p>
 							</div>
 						</div>
 					</div>
@@ -362,9 +371,7 @@ export default function AdminBooks() {
 								<p className="text-sm font-medium text-gray-500">
 									Reserved
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
-									{books.reduce((sum, book) => sum + (book.reserved ?? 0), 0)}
-								</p>
+								<p className="text-2xl font-bold text-gray-900">0</p>
 							</div>
 						</div>
 					</div>
@@ -403,11 +410,9 @@ export default function AdminBooks() {
 								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100"
 							>
 								<option value="all">All Categories</option>
-								{categories.map((category) => ( 
-									<option key={category} value={category}>
-										{category}
-									</option>
-								))}
+									{categories.map(c => (
+										<option key={c.id} value={c.id}>{c.name}</option>
+									))}
 							</select>
 						</div>
 						<div>
@@ -424,9 +429,8 @@ export default function AdminBooks() {
 								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100"
 							>
 								<option value="all">All Status</option>
-								<option value="Available">Available</option> 
-								<option value="Limited">Limited</option>
-								<option value="Out of Stock">Out of Stock</option>
+				  <option value="available">Available</option>
+				  <option value="unavailable">Unavailable</option>
 							</select>
 						</div>
 					</div>
@@ -444,10 +448,10 @@ export default function AdminBooks() {
 								onChange={(e) => setSortBy(e.target.value)}
 								className="px-3 py-1 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 							>
-								<option value="title">Title</option> 
+								<option value="title">Title</option>
 								<option value="author">Author</option>
 								<option value="category">Category</option>
-								<option value="addedDate">Date Added</option>
+								<option value="createdAt">Date Added</option>
 							</select>
 						</div>
 					</div>
@@ -483,83 +487,49 @@ export default function AdminBooks() {
 								</tr>
 							</thead>
 							<tbody className="bg-white divide-y divide-gray-200">
-								{paginatedBooks.map((book) => (
-									<tr key={book.id} className="hover:bg-gray-50">
-										<td className="px-6 py-4 whitespace-nowrap">
-											<div className="flex items-center">
-												<div className="flex-shrink-0 h-16 w-12">
-													<Image
-														src={book.image}
-														alt={book.title}
-														width={48}
-														height={64}
-														className="h-16 w-12 object-contain bg-gray-100 rounded"
-													/>
-												</div>
-												<div className="ml-4">
-													<div className="text-sm font-medium text-gray-900 line-clamp-2">
-														{book.title}
-													</div>
-													<div className="text-sm text-gray-500">
-														{book.publishYear}
-													</div>
-												</div>
+							{paginatedBooks.map(book => (
+								<tr key={book.id} className="hover:bg-gray-50">
+									<td className="px-6 py-4 whitespace-nowrap">
+										<div className="flex items-center">
+											<div className="flex-shrink-0 h-16 w-12">
+												<Image src={book.image || "/book-1.svg"} alt={book.title} width={48} height={64} className="h-16 w-12 object-contain bg-gray-100 rounded" />
 											</div>
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-											{book.author}
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap">
-											<span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-												{book.category}
-											</span>
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">
-											{book.isbn}
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-											<div className="flex flex-col">
-												<span
-													className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mb-1 ${
-																(book.available ?? 0) > 0
-															? "bg-green-100 text-green-800"
-															: "bg-red-100 text-red-800"
-													}`}
-												>
-															{(book.available ?? 0) > 0
-														? "Available"
-														: "Not Available"}
-												</span>
-												<span className="text-xs text-gray-500">
-													{book.available}/{book.copies} available
-												</span>
+											<div className="ml-4">
+												<div className="text-sm font-medium text-gray-900 line-clamp-2">{book.title}</div>
+												<div className="text-sm text-gray-500">{book.publishedYear ?? ''}</div>
 											</div>
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-											<div>
-												<div className="font-medium">{book.callNumber}</div>
-												<div className="text-xs">{book.location}</div>
-											</div>
-										</td>
-										<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-											<div className="flex space-x-2">
-												<button
-													onClick={() => handleEditBook(book)}
-													className="text-blue-600 hover:text-blue-900 transition-colors"
-												>
-													Edit
-												</button>
-												<button
-													onClick={() => handleDeleteBook(book.id)}
-													className="text-red-600 hover:text-red-900 transition-colors"
-												>
-													Delete
-												</button>
-											</div>
-										</td>
-									</tr>
-								))}
-							</tbody>
+										</div>
+									</td>
+									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{book.author}</td>
+									<td className="px-6 py-4 whitespace-nowrap"><span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{book.category.name}</span></td>
+									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{book.isbn}</td>
+									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+										<div className="flex flex-col">
+											<span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mb-1 ${book.availableCopies > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{book.availableCopies > 0 ? 'Available' : 'Not Available'}</span>
+											<span className="text-xs text-gray-500">{book.availableCopies}/{book.totalCopies} available</span>
+										</div>
+									</td>
+									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+										<div className="text-xs text-gray-500 flex flex-col space-y-1">
+											<span>Featured: {book.isFeatured ? 'Yes' : 'No'}</span>
+											<span>Status: {book.isActive ? 'Active' : 'Inactive'}</span>
+										</div>
+									</td>
+									<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+										<div className="flex space-x-2">
+											<button onClick={() => handleEditBook(book)} aria-label="Edit book" title="Edit" className="p-2 rounded-md text-blue-600 hover:text-white hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
+												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.375 2.625a1.767 1.767 0 0 1 2.5 2.5L13 13l-4 1 1-4 8.375-8.375Z" /></svg>
+												<span className="sr-only">Edit</span>
+											</button>
+											<button onClick={() => handleDeleteBook(book.id)} aria-label="Delete book" title="Delete" className="p-2 rounded-md text-red-600 hover:text-white hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
+												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" /></svg>
+												<span className="sr-only">Delete</span>
+											</button>
+										</div>
+									</td>
+								</tr>
+							))}
+						</tbody>
 						</table>
 					</div>
 
@@ -692,73 +662,54 @@ export default function AdminBooks() {
 											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-2">
-											ISBN *
-										</label>
-										<input
-											type="text"
-											name="isbn"
-											required
-											value={form.isbn || ""}
-											onChange={(e) =>
-												setForm({ ...form, isbn: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										/>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Category
-										</label>
-										<select
-											name="category"
-											value={form.category || ""}
-											onChange={(e) =>
-												setForm({ ...form, category: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										>
-											<option value="">Select Category</option>
-											<option value="Fiction">Fiction</option>
-											<option value="Non-Fiction">Non-Fiction</option>
-											<option value="Science">Science</option>
-											<option value="Technology">Technology</option>
-											<option value="History">History</option>
-											<option value="Biography">Biography</option>
-											<option value="Education">Education</option>
-										</select>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Total Copies
-										</label>
-										<input
-											type="number"
-											name="copies"
-											min="1"
-											value={form.copies || ""}
-											onChange={(e) =>
-												setForm({ ...form, copies: Number(e.target.value) || undefined })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										/>
-									</div>
-									<div>
-										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Location
-										</label>
-										<input
-											type="text"
-											name="location"
-											placeholder="e.g., Shelf A-1"
-											value={form.location || ""}
-											onChange={(e) =>
-												setForm({ ...form, location: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										/>
-									</div>
+									{/* ISBN auto-generated on backend */}
+																		<div>
+																				<label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
+																				<select
+																					name="categoryId"
+																					value={form.categoryId || ''}
+																					onChange={(e)=> setForm({ ...form, categoryId: e.target.value })}
+																					required
+																					className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+																				>
+																					<option value="">Select Category</option>
+																					{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+																				</select>
+																		</div>
+																		<div>
+																			<label className="block text-sm font-medium text-gray-700 mb-2">Total Copies</label>
+																			<input type="number" min={1} value={form.totalCopies ?? ''} onChange={e=> setForm({ ...form, totalCopies: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																		</div>
+																		<div>
+																			<label className="block text-sm font-medium text-gray-700 mb-2">Published Year</label>
+																			<input type="number" value={form.publishedYear ?? ''} onChange={e=> setForm({ ...form, publishedYear: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																		</div>
+																		<div>
+																			<label className="block text-sm font-medium text-gray-700 mb-2">Publisher</label>
+																			<input type="text" value={form.publisher ?? ''} onChange={e=> setForm({ ...form, publisher: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																		</div>
+																		<div>
+																			<label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
+																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			{form.image && (
+																				<div className="mt-2 flex items-center space-x-2">
+																					<Image src={form.image || '/book-1.svg'} alt="Preview" width={40} height={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
+																					<span className="text-xs text-gray-500">Preview</span>
+																				</div>
+																			)}
+																		</div>
+																		<div className="flex items-center space-x-2 mt-2">
+																			<input id="featuredAdd" type="checkbox" checked={form.isFeatured ?? false} onChange={e=> setForm({ ...form, isFeatured: e.target.checked })} className="h-4 w-4" />
+																			<label htmlFor="featuredAdd" className="text-sm text-gray-700">Featured</label>
+																		</div>
+																		<div className="flex items-center space-x-2 mt-2">
+																			<input id="activeAdd" type="checkbox" checked={form.isActive ?? true} onChange={e=> setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4" />
+																			<label htmlFor="activeAdd" className="text-sm text-gray-700">Active</label>
+																		</div>
+																		<div className="md:col-span-2">
+																			<label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
+																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
+																		</div>
 								</div>
 								<div className="flex justify-end space-x-3 pt-4">
 									<button
@@ -841,75 +792,50 @@ export default function AdminBooks() {
 											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
-									<div>
-										<label className="block text-base font-semibold text-gray-900 mb-2">
-											ISBN *
-										</label>
-										<input
-											type="text"
-											name="isbn"
-											required
-											value={form.isbn || ""}
-											onChange={(e) =>
-												setForm({ ...form, isbn: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										/>
-									</div>
-									<div>
-										<label className="block text-base font-semibold text-gray-900 mb-2">
-											Category
-										</label>
-										<select
-											name="category"
-											value={form.category || ""}
-											onChange={(e) =>
-												setForm({ ...form, category: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										>
-											<option value="">Select Category</option>
-											<option value="Fiction">Fiction</option>
-											<option value="Non-Fiction">Non-Fiction</option>
-											<option value="Science">Science</option>
-											<option value="Technology">Technology</option>
-											<option value="History">History</option>
-											<option value="Biography">Biography</option>
-											<option value="Education">Education</option>
-										</select>
-									</div>
-									<div>
-										<label className="block text-base font-semibold text-gray-900 mb-2">
-											Total Copies
-										</label>
-										<input
-											type="number"
-											name="copies"
-											min="1"
-											value={form.copies || ""}
-											onChange={(e) =>
-												setForm({ ...form, copies: Number(e.target.value) || undefined })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										/>
-									</div>
-									<div>
-										<label className="block text-base font-semibold text-gray-900 mb-2">
-											Location
-										</label>
-										<input
-											type="text"
-											name="location"
-											placeholder="e.g., Shelf A-1"
-											value={form.location || ""}
-											onChange={(e) =>
-												setForm({ ...form, location: e.target.value })
-											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-										/>
-									</div>
-								</div>
-								<div className="flex justify-end space-x-3 pt-4">
+									{/* ISBN is not editable */}
+																		<div>
+																			<label className="block text-base font-semibold text-gray-900 mb-2">Category *</label>
+																			<select name="categoryId" value={form.categoryId || ''} required onChange={e=> setForm({ ...form, categoryId: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+																				<option value="">Select Category</option>
+																				{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+																			</select>
+																		</div>
+																		<div>
+																			<label className="block text-base font-semibold text-gray-900 mb-2">Total Copies</label>
+																			<input type="number" min={1} value={form.totalCopies ?? ''} onChange={e=> setForm({ ...form, totalCopies: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																		</div>
+																		<div>
+																			<label className="block text-base font-semibold text-gray-900 mb-2">Published Year</label>
+																			<input type="number" value={form.publishedYear ?? ''} onChange={e=> setForm({ ...form, publishedYear: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																		</div>
+																		<div>
+																			<label className="block text-base font-semibold text-gray-900 mb-2">Publisher</label>
+																			<input type="text" value={form.publisher ?? ''} onChange={e=> setForm({ ...form, publisher: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																		</div>
+																		<div>
+																			<label className="block text-base font-semibold text-gray-900 mb-2">Image URL</label>
+																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			{(form.image || selectedBook.image) && (
+																				<div className="mt-2 flex items-center space-x-2">
+																					<Image src={(form.image || selectedBook.image) || '/book-1.svg'} alt="Preview" width={40} height={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
+																					<span className="text-xs text-gray-500">Preview</span>
+																				</div>
+																			)}
+																		</div>
+																		<div className="flex items-center space-x-2 mt-2">
+																			<input id="featuredEdit" type="checkbox" checked={form.isFeatured ?? false} onChange={e=> setForm({ ...form, isFeatured: e.target.checked })} className="h-4 w-4" />
+																			<label htmlFor="featuredEdit" className="text-sm text-gray-700">Featured</label>
+																		</div>
+																		<div className="flex items-center space-x-2 mt-2">
+																			<input id="activeEdit" type="checkbox" checked={form.isActive ?? true} onChange={e=> setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4" />
+																			<label htmlFor="activeEdit" className="text-sm text-gray-700">Active</label>
+																		</div>
+																		<div className="md:col-span-2">
+																			<label className="block text-base font-semibold text-gray-900 mb-2">Description</label>
+																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
+																		</div>
+																	</div>
+																	<div className="flex justify-end space-x-3 pt-4">
 									<button
 										type="button"
 										onClick={() => setShowEditModal(false)}

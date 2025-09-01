@@ -102,10 +102,12 @@ export class NotificationService {
     bookTitle: string,
     daysOverdue: number
   ) {
+    const finePerDay = 100 // ₹100 per day
+    const totalFine = finePerDay * daysOverdue
     return this.createNotification({
       userId,
       title: 'Book Overdue! ⏰',
-      message: `"${bookTitle}" is ${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue. Please return it as soon as possible to avoid additional fines.`,
+      message: `"${bookTitle}" is ${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue. Current fine: ₹${totalFine}. Please return immediately or additional fines of ₹${finePerDay}/day will apply.`,
       type: 'ALERT'
     })
   }
@@ -120,7 +122,7 @@ export class NotificationService {
     return this.createNotification({
       userId,
       title: 'Fine Issued 💰',
-      message: `A fine of ₹${fineAmount.toFixed(2)} has been issued for the ${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue return of "${bookTitle}". Please pay at your earliest convenience.`,
+      message: `A fine of ₹${fineAmount.toFixed(2)} has been issued for the ${daysOverdue} day${daysOverdue > 1 ? 's' : ''} overdue return of "${bookTitle}". Please pay at your earliest convenience. Note: Additional ₹100/day will be added for subsequent overdue days.`,
       type: 'ALERT'
     })
   }
@@ -146,13 +148,15 @@ export class NotificationService {
     bookTitle: string,
     daysUntilDue: number
   ) {
-    const urgency = daysUntilDue <= 1 ? 'ALERT' : daysUntilDue <= 3 ? 'WARNING' : 'INFO'
-    const emoji = daysUntilDue <= 1 ? '🚨' : daysUntilDue <= 3 ? '⚠️' : '📅'
-    
+    const urgency = daysUntilDue <= 1 ? 'ALERT' : 'WARNING'
+    const emoji = daysUntilDue <= 1 ? '🚨' : '⚠️'
+    const finePerDay = 100
+    const estimatedFineIfOverdue = finePerDay * Math.max(1, daysUntilDue)
+
     return this.createNotification({
       userId,
-      title: `Due Date Reminder ${emoji}`,
-      message: `"${bookTitle}" is due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}. ${daysUntilDue <= 1 ? 'Please return it today to avoid fines!' : 'Please plan to return it soon.'}`,
+      title: `Return Reminder ${emoji}`,
+      message: `"${bookTitle}" is due in ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}. If not returned on time, fines of ₹${finePerDay}/day will apply (estimated ₹${estimatedFineIfOverdue} if overdue by ${daysUntilDue} day${daysUntilDue > 1 ? 's' : ''}). Please return on or before the due date to avoid charges.`,
       type: urgency
     })
   }
