@@ -103,7 +103,7 @@ export default function AdminBooks() {
 	const startIndex = (currentPage - 1) * booksPerPage;
 	const paginatedBooks = filteredBooks.slice(startIndex, startIndex + booksPerPage);
 
-	const resetForm = () => setForm({ title: "", author: "", categoryId: "" });
+	const resetForm = () => setForm({ title: "", author: "", categoryId: "", isActive: true, isFeatured: false });
 
 	// CRUD operations
 	const handleAddBook = async (e: React.FormEvent) => {
@@ -122,14 +122,15 @@ export default function AdminBooks() {
 				},
 				body: JSON.stringify({
 					title: form.title,
-						author: form.author,
-						description: form.description ?? undefined,
-						categoryId: form.categoryId,
-						image: form.image ?? undefined,
-						totalCopies: form.totalCopies ? Number(form.totalCopies) : 1,
-						publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
-						publisher: form.publisher ?? undefined,
-						isFeatured: form.isFeatured ?? false
+					author: form.author,
+					description: form.description ?? undefined,
+					categoryId: form.categoryId,
+					image: form.image ?? undefined,
+					totalCopies: form.totalCopies ? Math.max(1, Number(form.totalCopies)) : 1,
+					publishedYear: form.publishedYear ? Number(form.publishedYear) : undefined,
+					publisher: form.publisher ?? undefined,
+					isFeatured: form.isFeatured ?? false,
+					isActive: form.isActive !== undefined ? form.isActive : true
 				})
 			});
 			const data = await res.json();
@@ -631,7 +632,7 @@ export default function AdminBooks() {
 
 			{/* Add Book Modal */}
 			{showAddModal && (
-				<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+				<div className="fixed inset-0 bg-black/30 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
 					<div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
 						<div className="mt-3">
 							<div className="flex justify-between items-center mb-4">
@@ -671,7 +672,7 @@ export default function AdminBooks() {
 											onChange={(e) =>
 												setForm({ ...form, title: e.target.value })
 											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									<div>
@@ -686,7 +687,7 @@ export default function AdminBooks() {
 											onChange={(e) =>
 												setForm({ ...form, author: e.target.value })
 											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									{/* ISBN auto-generated on backend */}
@@ -697,7 +698,7 @@ export default function AdminBooks() {
 																					value={form.categoryId || ''}
 																					onChange={(e)=> setForm({ ...form, categoryId: e.target.value })}
 																					required
-																					className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+																					className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 																				>
 																					<option value="">Select Category</option>
 																					{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -705,19 +706,19 @@ export default function AdminBooks() {
 																		</div>
 																		<div>
 																			<label className="block text-sm font-medium text-gray-700 mb-2">Total Copies</label>
-																			<input type="number" min={1} value={form.totalCopies ?? ''} onChange={e=> setForm({ ...form, totalCopies: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="number" min={1} value={form.totalCopies ?? ''} onChange={e=> setForm({ ...form, totalCopies: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																		</div>
 																		<div>
 																			<label className="block text-sm font-medium text-gray-700 mb-2">Published Year</label>
-																			<input type="number" value={form.publishedYear ?? ''} onChange={e=> setForm({ ...form, publishedYear: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="number" value={form.publishedYear ?? ''} onChange={e=> setForm({ ...form, publishedYear: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																		</div>
 																		<div>
 																			<label className="block text-sm font-medium text-gray-700 mb-2">Publisher</label>
-																			<input type="text" value={form.publisher ?? ''} onChange={e=> setForm({ ...form, publisher: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="text" value={form.publisher ?? ''} onChange={e=> setForm({ ...form, publisher: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																		</div>
 																		<div>
 																			<label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value.trim() })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value.trim() })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																			{form.image && (
 																				<div className="mt-2 flex items-center space-x-2">
 																					<SafeBookImage src={form.image} alt="Preview" w={40} h={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
@@ -737,7 +738,7 @@ export default function AdminBooks() {
 																		</div>
 																		<div className="md:col-span-2">
 																			<label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
-																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
+																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
 																		</div>
 								</div>
 								<div className="flex justify-end space-x-3 pt-4">
@@ -750,9 +751,10 @@ export default function AdminBooks() {
 									</button>
 									<button
 										type="submit"
-										className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+										disabled={submitting}
+										className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
 									>
-										Add Book
+										{submitting ? 'Adding...' : 'Add Book'}
 									</button>
 								</div>
 							</form>
@@ -763,7 +765,7 @@ export default function AdminBooks() {
 
 			{/* Edit Book Modal */}
 			{showEditModal && selectedBook && (
-				<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+				<div className="fixed inset-0 bg-black/30 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
 					<div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
 						<div className="mt-3">
 							<div className="flex justify-between items-center mb-4">
@@ -803,7 +805,7 @@ export default function AdminBooks() {
 											onChange={(e) =>
 												setForm({ ...form, title: e.target.value })
 											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									<div>
@@ -818,32 +820,32 @@ export default function AdminBooks() {
 											onChange={(e) =>
 												setForm({ ...form, author: e.target.value })
 											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
 										/>
 									</div>
 									{/* ISBN is not editable */}
 																		<div>
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Category *</label>
-																			<select name="categoryId" value={form.categoryId || ''} required onChange={e=> setForm({ ...form, categoryId: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
+																			<select name="categoryId" value={form.categoryId || ''} required onChange={e=> setForm({ ...form, categoryId: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600">
 																				<option value="">Select Category</option>
 																				{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 																			</select>
 																		</div>
 																		<div>
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Total Copies</label>
-																			<input type="number" min={1} value={form.totalCopies ?? ''} onChange={e=> setForm({ ...form, totalCopies: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="number" min={1} value={form.totalCopies ?? ''} onChange={e=> setForm({ ...form, totalCopies: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																		</div>
 																		<div>
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Published Year</label>
-																			<input type="number" value={form.publishedYear ?? ''} onChange={e=> setForm({ ...form, publishedYear: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="number" value={form.publishedYear ?? ''} onChange={e=> setForm({ ...form, publishedYear: Number(e.target.value) || undefined })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																		</div>
 																		<div>
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Publisher</label>
-																			<input type="text" value={form.publisher ?? ''} onChange={e=> setForm({ ...form, publisher: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="text" value={form.publisher ?? ''} onChange={e=> setForm({ ...form, publisher: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																		</div>
 																		<div>
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Image URL</label>
-																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value.trim() })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value.trim() })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																			{(form.image || selectedBook.image) && (
 																				<div className="mt-2 flex items-center space-x-2">
 																					<SafeBookImage src={(form.image || selectedBook.image) || undefined} alt="Preview" w={40} h={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
@@ -863,7 +865,7 @@ export default function AdminBooks() {
 																	</div>
 																		<div className="md:col-span-2">
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Description</label>
-																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
+																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
 																		</div>
 																	</div>
 																	<div className="flex justify-end space-x-3 pt-4">
