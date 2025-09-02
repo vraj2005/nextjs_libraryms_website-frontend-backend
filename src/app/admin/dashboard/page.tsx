@@ -3,47 +3,79 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useAuth } from '@/contexts/AuthContext'
 
-interface AdminUser {
-  username: string;
-  role: string;
-  loginTime: string;
+interface DashboardStats {
+  totalBooks: number;
+  totalMembers: number;
+  borrowedBooks: number;
+  overdueBooks: number;
+  newMembers: number;
+  reservations: number;
+  digitalResources: number;
+  studyRooms: number;
+}
+
+interface ActivityItem {
+  id: string;
+  type: string;
+  action: string;
+  details?: string;
+  member?: string;
+  time: string;
+  status?: string;
 }
 
 export default function AdminDashboard() {
-  const [adminUser, setAdminUser] = useState<AdminUser | null>(null);
-  const [stats, setStats] = useState({
-    totalBooks: 15847,
-    totalMembers: 5234,
-    borrowedBooks: 3421,
-    overdueBooks: 127,
-    newMembers: 89,
-    reservations: 234,
-    digitalResources: 1203,
-    studyRooms: 24
-  });
+  const { user, token } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [activities, setActivities] = useState<ActivityItem[]>([]);
+  const [loading, setLoading] = useState(true);
   const router = useRouter();
 
   useEffect(() => {
-    // Check admin authentication
-    const adminAuth = localStorage.getItem("adminAuth");
-    const adminUserData = localStorage.getItem("adminUser");
-    
-    if (!adminAuth || adminAuth !== "true" || !adminUserData) {
-      router.push("/login");
+    if (!user || !token) return;
+    if (user.role !== 'ADMIN' && user.role !== 'LIBRARIAN') {
+      router.push('/');
       return;
     }
+    const load = async () => {
+      setLoading(true);
+      try {
+        const res = await fetch('/api/admin/dashboard', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok) {
+          setStats(data.stats);
+          setActivities(data.recentActivities || []);
+        } else {
+          console.error('Dashboard load error', data.error);
+        }
+      } catch (e) {
+        console.error('Dashboard load failed', e);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [user, token, router]);
 
-    setAdminUser(JSON.parse(adminUserData));
-  }, [router]);
+  const formatRelative = (iso: string) => {
+    try {
+      const date = new Date(iso);
+      const diff = Date.now() - date.getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'just now';
+      if (mins < 60) return `${mins}m ago`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `${hrs}h ago`;
+      const days = Math.floor(hrs / 24);
+      return `${days}d ago`;
+    } catch { return ''; }
+  }
 
-  const handleLogout = () => {
-    localStorage.removeItem("adminAuth");
-    localStorage.removeItem("adminUser");
-    router.push("/");
-  };
-
-  if (!adminUser) {
+  if (loading || !stats) {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -56,14 +88,14 @@ export default function AdminDashboard() {
       title: "Add New Book",
       description: "Add books to library catalog",
       icon: "📚",
-      link: "/admin/books/add",
+      link: "/admin/books?add=1",
       color: "from-blue-500 to-blue-600"
     },
     {
       title: "Manage Members",
       description: "View and edit member profiles",
       icon: "👥",
-      link: "/admin/members",
+      link: "/admin/members", // existing members page
       color: "from-green-500 to-green-600"
     },
     {
@@ -195,27 +227,26 @@ export default function AdminDashboard() {
               </div>
               <div className="p-6">
                 <div className="space-y-4">
-                  {recentActivities.map((activity) => (
-                    <div key={activity.id} className="flex items-start space-x-3">
-                      <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs ${
-                        activity.type === 'borrow' ? 'bg-blue-100 text-blue-600' :
-                        activity.type === 'return' ? 'bg-green-100 text-green-600' :
-                        activity.type === 'member' ? 'bg-purple-100 text-purple-600' :
-                        activity.type === 'overdue' ? 'bg-red-100 text-red-600' :
-                        'bg-yellow-100 text-yellow-600'
-                      }`}>
-                        {activity.type === 'borrow' ? '📖' :
-                         activity.type === 'return' ? '✅' :
-                         activity.type === 'member' ? '👤' :
-                         activity.type === 'overdue' ? '⚠️' : '📌'}
+                  {activities.length === 0 && (
+                    <p className="text-sm text-gray-500">No recent activity.</p>
+                  )}
+                  {activities.map(activity => {
+                    const icon = activity.type === 'borrow' ? '📖' : activity.type === 'request' ? '📝' : activity.type === 'overdue' ? '⚠️' : activity.type === 'book' ? '➕' : '📌'
+                    const color = activity.type === 'borrow' ? 'bg-blue-100 text-blue-600' : activity.type === 'request' ? 'bg-purple-100 text-purple-600' : activity.type === 'overdue' ? 'bg-red-100 text-red-600' : activity.type === 'book' ? 'bg-green-100 text-green-600' : 'bg-yellow-100 text-yellow-600'
+                    return (
+                      <div key={activity.id} className="flex items-start space-x-3">
+                        <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs ${color}`}>{icon}</div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900">{activity.action}</p>
+                          {activity.details && <p className="text-sm text-gray-500">{activity.details}</p>}
+                          <p className="text-xs text-gray-400 mt-1">
+                            {activity.member && <>by {activity.member} • </>}
+                            {formatRelative(activity.time)}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-900">{activity.action}</p>
-                        <p className="text-sm text-gray-500">{activity.details}</p>
-                        <p className="text-xs text-gray-400 mt-1">by {activity.member} • {activity.time}</p>
-                      </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
                 <div className="mt-6">
                   <Link href="/admin/activities" className="text-blue-600 hover:text-blue-800 text-sm font-medium">

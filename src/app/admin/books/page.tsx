@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useRouter } from 'next/navigation';
 import Image from "next/image";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -29,6 +30,8 @@ type EditableFields = Partial<Pick<BookRecord, "title" | "author" | "description
 
 export default function AdminBooks() {
 	const { token } = useAuth();
+	const searchParams = useSearchParams();
+	const router = useRouter();
 	const [books, setBooks] = useState<BookRecord[]>([]);
 	const [categories, setCategories] = useState<CategoryOption[]>([]);
 	const [searchQuery, setSearchQuery] = useState("");
@@ -67,6 +70,18 @@ export default function AdminBooks() {
 		};
 		load();
 	}, [sortBy]);
+
+	// Open add modal if query param add=1
+	useEffect(() => {
+		const addParam = searchParams.get('add');
+		if (addParam === '1') {
+			setShowAddModal(true);
+			// Clean URL (replace state) to avoid reopening on close/back
+			const params = new URLSearchParams(searchParams.toString());
+			params.delete('add');
+			router.replace(`/admin/books${params.toString() ? '?' + params.toString() : ''}`);
+		}
+	}, [searchParams, router]);
 
 	// Derived filtered books
 	const filteredBooks = useMemo(() => {
