@@ -216,6 +216,33 @@ export default function AdminBooks() {
 	const availableSum = books.reduce((sum, b) => sum + b.availableCopies, 0);
 	const borrowedSum = books.reduce((sum, b) => sum + (b.totalCopies - b.availableCopies), 0);
 
+	// Helper to render an image that might be remote (domain not whitelisted) without breaking
+	const SafeBookImage: React.FC<{ src?: string | null; alt: string; className?: string; w?: number; h?: number; }> = ({ src, alt, className = '', w = 48, h = 64 }) => {
+		const fallback = '/book-1.svg';
+		if (!src) return <Image src={fallback} alt={alt} width={w} height={h} className={className} />;
+		try {
+			const url = new URL(src, typeof window !== 'undefined' ? window.location.origin : 'http://localhost');
+			const allowed = [
+				'images.unsplash.com',
+				'cdn-icons-png.flaticon.com',
+				'png.pngtree.com',
+				'th.bing.com',
+				'www.pngall.com',
+				'pngimg.com',
+				'static.vecteezy.com',
+				'file.aiquickdraw.com',
+				'www.citypng.com'
+			];
+			if (allowed.includes(url.hostname)) {
+				return <Image src={src} alt={alt} width={w} height={h} className={className} />;
+			}
+			// Non-allowed domain: use plain img tag (no optimization) to avoid Next.js domain error
+			return <img src={src} alt={alt} width={w} height={h} className={className} onError={(e) => { (e.currentTarget as HTMLImageElement).src = fallback; }} />;
+		} catch {
+			return <Image src={fallback} alt={alt} width={w} height={h} className={className} />;
+		}
+	};
+
 	if (loading) {
 		return (
 			<div className="min-h-screen bg-gray-100 flex items-center justify-center">
@@ -492,7 +519,7 @@ export default function AdminBooks() {
 									<td className="px-6 py-4 whitespace-nowrap">
 										<div className="flex items-center">
 											<div className="flex-shrink-0 h-16 w-12">
-												<Image src={book.image || "/book-1.svg"} alt={book.title} width={48} height={64} className="h-16 w-12 object-contain bg-gray-100 rounded" />
+												  <SafeBookImage src={book.image || undefined} alt={book.title} w={48} h={64} className="h-16 w-12 object-contain bg-gray-100 rounded" />
 											</div>
 											<div className="ml-4">
 												<div className="text-sm font-medium text-gray-900 line-clamp-2">{book.title}</div>
@@ -690,21 +717,23 @@ export default function AdminBooks() {
 																		</div>
 																		<div>
 																			<label className="block text-sm font-medium text-gray-700 mb-2">Image URL</label>
-																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value.trim() })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																			{form.image && (
 																				<div className="mt-2 flex items-center space-x-2">
-																					<Image src={form.image || '/book-1.svg'} alt="Preview" width={40} height={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
+																					<SafeBookImage src={form.image} alt="Preview" w={40} h={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
 																					<span className="text-xs text-gray-500">Preview</span>
 																				</div>
 																			)}
 																		</div>
-																		<div className="flex items-center space-x-2 mt-2">
-																			<input id="featuredAdd" type="checkbox" checked={form.isFeatured ?? false} onChange={e=> setForm({ ...form, isFeatured: e.target.checked })} className="h-4 w-4" />
-																			<label htmlFor="featuredAdd" className="text-sm text-gray-700">Featured</label>
-																		</div>
-																		<div className="flex items-center space-x-2 mt-2">
-																			<input id="activeAdd" type="checkbox" checked={form.isActive ?? true} onChange={e=> setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4" />
-																			<label htmlFor="activeAdd" className="text-sm text-gray-700">Active</label>
+																		<div className="flex items-center space-x-6 mt-2">
+																			<label className="inline-flex items-center space-x-2 text-sm text-gray-700">
+																				<input id="featuredAdd" type="checkbox" checked={form.isFeatured ?? false} onChange={e=> setForm({ ...form, isFeatured: e.target.checked })} className="h-4 w-4" />
+																				<span>Featured</span>
+																			</label>
+																			<label className="inline-flex items-center space-x-2 text-sm text-gray-700">
+																				<input id="activeAdd" type="checkbox" checked={form.isActive ?? true} onChange={e=> setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4" />
+																				<span>Active</span>
+																			</label>
 																		</div>
 																		<div className="md:col-span-2">
 																			<label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
@@ -814,22 +843,24 @@ export default function AdminBooks() {
 																		</div>
 																		<div>
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Image URL</label>
-																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
+																			<input type="text" value={form.image ?? ''} placeholder="https://..." onChange={e=> setForm({ ...form, image: e.target.value.trim() })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600" />
 																			{(form.image || selectedBook.image) && (
 																				<div className="mt-2 flex items-center space-x-2">
-																					<Image src={(form.image || selectedBook.image) || '/book-1.svg'} alt="Preview" width={40} height={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
+																					<SafeBookImage src={(form.image || selectedBook.image) || undefined} alt="Preview" w={40} h={56} className="h-14 w-10 object-cover rounded bg-gray-100" />
 																					<span className="text-xs text-gray-500">Preview</span>
 																				</div>
 																			)}
 																		</div>
-																		<div className="flex items-center space-x-2 mt-2">
+																		<div className="flex items-center space-x-6 mt-2">
+																		<label className="inline-flex items-center space-x-2 text-sm text-gray-700">
 																			<input id="featuredEdit" type="checkbox" checked={form.isFeatured ?? false} onChange={e=> setForm({ ...form, isFeatured: e.target.checked })} className="h-4 w-4" />
-																			<label htmlFor="featuredEdit" className="text-sm text-gray-700">Featured</label>
-																		</div>
-																		<div className="flex items-center space-x-2 mt-2">
+																			<span>Featured</span>
+																		</label>
+																		<label className="inline-flex items-center space-x-2 text-sm text-gray-700">
 																			<input id="activeEdit" type="checkbox" checked={form.isActive ?? true} onChange={e=> setForm({ ...form, isActive: e.target.checked })} className="h-4 w-4" />
-																			<label htmlFor="activeEdit" className="text-sm text-gray-700">Active</label>
-																		</div>
+																			<span>Active</span>
+																		</label>
+																	</div>
 																		<div className="md:col-span-2">
 																			<label className="block text-base font-semibold text-gray-900 mb-2">Description</label>
 																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm font-medium text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
