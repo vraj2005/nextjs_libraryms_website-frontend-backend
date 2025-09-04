@@ -287,6 +287,16 @@ export default function Navigation() {
                     </svg>
                     <span className="group-hover/item:text-green-600 transition-colors duration-200">My Books</span>
                   </Link>
+                  <Link
+                    href="/fines"
+                    className="flex items-center gap-2 px-4 md:px-6 py-3 hover:bg-sky-50 text-sky-700 transition-all duration-200 font-medium focus-visible:ring-2 focus-visible:ring-sky-300 text-sm md:text-base transform hover:scale-105 hover:translate-x-2 group/item border-l-4 border-transparent hover:border-red-400"
+                    onClick={closeAccountDropdown}
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 md:w-5 md:h-5 transition-all duration-200 group-hover/item:scale-125 group-hover/item:text-red-600">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    <span className="group-hover/item:text-red-600 transition-colors duration-200">Fines</span>
+                  </Link>
                   {user && user.role === 'ADMIN' && (
                     <Link
                       href="/admin"

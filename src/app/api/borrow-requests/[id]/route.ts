@@ -202,42 +202,44 @@ export async function PATCH(
         })
       ])
 
-        // Create fine if overdue
-        if (isOverdue && borrowRequest.dueDate) {
-          const daysOverdue = Math.ceil((returnDate.getTime() - borrowRequest.dueDate.getTime()) / (1000 * 60 * 60 * 24))
-          const fineAmount = daysOverdue * 1.0 // ₹1 per day
-
-          await prisma.fine.create({
-            data: {
-              userId: borrowRequest.userId,
-              borrowRequestId: borrowRequest.id,
-              amount: fineAmount,
-              daysOverdue
-            }
-          })
-
-          // Create notification for fine using NotificationService
-          await NotificationService.notifyFineIssued(
-            borrowRequest.userId,
-            borrowRequest.book.title,
-            fineAmount,
+      // Create fine if overdue
+      if (isOverdue && borrowRequest.dueDate) {
+        const daysOverdue = Math.ceil((returnDate.getTime() - borrowRequest.dueDate.getTime()) / (1000 * 60 * 60 * 24))
+        const fineAmount = daysOverdue * 100.0 // ₹100 per day
+        
+        await prisma.fine.create({
+          data: {
+            userId: borrowRequest.userId,
+            borrowRequestId: borrowRequest.id,
+            amount: fineAmount,
             daysOverdue
-          )
-        }
+          }
+        })
 
-        // Create notification for book return using NotificationService
-        await NotificationService.notifyBookReturned(
+        // Create notification for fine using NotificationService
+        await NotificationService.notifyFineIssued(
           borrowRequest.userId,
           borrowRequest.book.title,
-          isOverdue
-        )      // Create user history
+          fineAmount,
+          daysOverdue
+        )
+      }
+
+      // Create notification for book return using NotificationService
+      await NotificationService.notifyBookReturned(
+        borrowRequest.userId,
+        borrowRequest.book.title,
+        isOverdue
+      )
+
+      // Create user history
       await prisma.userHistory.create({
         data: {
           userId: borrowRequest.userId,
           action: 'BOOK_RETURNED',
           description: `Returned "${borrowRequest.book.title}"${isOverdue ? ' (overdue)' : ''}`,
-          metadata: JSON.stringify({ 
-            bookId: borrowRequest.bookId, 
+          metadata: JSON.stringify({
+            bookId: borrowRequest.bookId,
             requestId: borrowRequest.id,
             returnDate,
             isOverdue
