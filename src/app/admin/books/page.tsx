@@ -268,25 +268,33 @@ export default function AdminBooks() {
 	}
 
 	return (
-		<div className="min-h-screen bg-gray-50">
+		<div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/20">
 			<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 				{/* Header */}
-				<div className="flex justify-between items-center mb-8">
-					<div>
-						<h1 className="text-3xl font-bold text-gray-900 mb-2">
-							Books Management
-						</h1>
-						<p className="text-gray-600">
-							Manage your library&apos;s book collection
-						</p>
-					</div>
+				<div className="mb-8">
+					<div className="flex justify-between items-start mb-6">
+						<div className="flex items-center space-x-4">
+							<div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-lg">
+								<svg className="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+									<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25" />
+								</svg>
+							</div>
+							<div>
+								<h1 className="text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent mb-2">
+									Books Management
+								</h1>
+								<p className="text-gray-600">
+									Manage your library&apos;s book collection and catalog
+								</p>
+							</div>
+						</div>
 						<button
 							onClick={() => {
 								resetForm();
 								setShowAddModal(true);
 							}}
-						className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg flex items-center gap-2"
-					>
+							className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold py-3 px-6 rounded-xl flex items-center gap-2 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02]"
+						>
 						<svg
 							className="w-5 h-5"
 							fill="none"
@@ -306,12 +314,12 @@ export default function AdminBooks() {
 
 				{/* Stats Cards */}
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-					<div className="bg-white rounded-lg shadow p-6">
+					<div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
+								<div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
 									<svg
-										className="w-5 h-5 text-blue-600"
+										className="w-6 h-6 text-white"
 										fill="none"
 										stroke="currentColor"
 										strokeWidth="2"
@@ -324,23 +332,23 @@ export default function AdminBooks() {
 									</svg>
 								</div>
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-500">
+							<div className="ml-5">
+								<p className="text-sm font-medium text-gray-600">
 									Total Books
 								</p>
-								<p className="text-2xl font-bold text-gray-900">
+								<p className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-blue-700 bg-clip-text text-transparent">
 									{books.length}
 								</p>
 							</div>
 						</div>
 					</div>
 
-					<div className="bg-white rounded-lg shadow p-6">
+					<div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
+								<div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg">
 									<svg
-										className="w-5 h-5 text-green-600"
+										className="w-6 h-6 text-white"
 										fill="none"
 										stroke="currentColor"
 										strokeWidth="2"
@@ -354,21 +362,21 @@ export default function AdminBooks() {
 									</svg>
 								</div>
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-500">
+							<div className="ml-5">
+								<p className="text-sm font-medium text-gray-600">
 									Available
 								</p>
-								<p className="text-2xl font-bold text-gray-900">{availableSum}</p>
+								<p className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-emerald-700 bg-clip-text text-transparent">{availableSum}</p>
 							</div>
 						</div>
 					</div>
 
-					<div className="bg-white rounded-lg shadow p-6">
+					<div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<div className="w-8 h-8 bg-yellow-100 rounded-lg flex items-center justify-center">
+								<div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-amber-600 rounded-xl flex items-center justify-center shadow-lg">
 									<svg
-										className="w-5 h-5 text-yellow-600"
+										className="w-6 h-6 text-white"
 										fill="none"
 										stroke="currentColor"
 										strokeWidth="2"
@@ -382,21 +390,21 @@ export default function AdminBooks() {
 									</svg>
 								</div>
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-500">
+							<div className="ml-5">
+								<p className="text-sm font-medium text-gray-600">
 									Borrowed
 								</p>
-								<p className="text-2xl font-bold text-gray-900">{borrowedSum}</p>
+								<p className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-amber-700 bg-clip-text text-transparent">{borrowedSum}</p>
 							</div>
 						</div>
 					</div>
 
-					<div className="bg-white rounded-lg shadow p-6">
+					<div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 hover:shadow-xl transition-all duration-300 hover:scale-[1.02]">
 						<div className="flex items-center">
 							<div className="flex-shrink-0">
-								<div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+								<div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
 									<svg
-										className="w-5 h-5 text-purple-600"
+										className="w-6 h-6 text-white"
 										fill="none"
 										stroke="currentColor"
 										strokeWidth="2"
@@ -405,24 +413,26 @@ export default function AdminBooks() {
 										<path
 											strokeLinecap="round"
 											strokeLinejoin="round"
-											d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+											d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
 										/>
 									</svg>
 								</div>
 							</div>
-							<div className="ml-4">
-								<p className="text-sm font-medium text-gray-500">
-									Reserved
+							<div className="ml-5">
+								<p className="text-sm font-medium text-gray-600">
+									Featured
 								</p>
-								<p className="text-2xl font-bold text-gray-900">0</p>
+								<p className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-purple-700 bg-clip-text text-transparent">
+									{books.filter(book => book.isFeatured).length}
+								</p>
 							</div>
 						</div>
 					</div>
 				</div>
 
 				{/* Search and Filters */}
-				<div className="bg-white rounded-lg shadow p-6 mb-8">
-					<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+				<div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 p-6 mb-8">
+					<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 						<div className="md:col-span-2">
 							<label
 								htmlFor="search"
@@ -430,14 +440,21 @@ export default function AdminBooks() {
 							>
 								Search Books
 							</label>
-							<input
-								type="text"
-								id="search"
-								placeholder="Search by title, author, ISBN, or call number..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 placeholder-gray-600 bg-white disabled:text-gray-700 disabled:bg-gray-100"
-							/>
+							<div className="relative">
+								<div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+									<svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+										<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+									</svg>
+								</div>
+								<input
+									type="text"
+									id="search"
+									placeholder="Search by title, author, ISBN, or call number..."
+									value={searchQuery}
+									onChange={(e) => setSearchQuery(e.target.value)}
+									className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 placeholder-gray-500 bg-white/80 backdrop-blur-sm transition-all duration-300"
+								/>
+							</div>
 						</div>
 						<div>
 							<label
@@ -450,7 +467,7 @@ export default function AdminBooks() {
 								id="category"
 								value={selectedCategory}
 								onChange={(e) => setSelectedCategory(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100"
+								className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white/80 backdrop-blur-sm transition-all duration-300"
 							>
 								<option value="all">All Categories</option>
 									{categories.map(c => (
@@ -461,7 +478,7 @@ export default function AdminBooks() {
 						<div>
 							<label
 								htmlFor="status"
-								className="block text-base font-semibold text-gray-900 mb-2"
+								className="block text-sm font-medium text-gray-700 mb-2"
 							>
 								Status
 							</label>
@@ -469,27 +486,70 @@ export default function AdminBooks() {
 								id="status"
 								value={selectedStatus}
 								onChange={(e) => setSelectedStatus(e.target.value)}
-								className="w-full px-3 py-2 border border-gray-400 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100"
+								className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 bg-white/80 backdrop-blur-sm transition-all duration-300"
 							>
 								<option value="all">All Status</option>
-				  <option value="available">Available</option>
-				  <option value="unavailable">Unavailable</option>
+				  				<option value="available">Available</option>
+				  				<option value="unavailable">Unavailable</option>
 							</select>
 						</div>
 					</div>
-					<div className="mt-4 flex justify-between items-center">
-						<p className="text-sm text-gray-600">
-							Showing {paginatedBooks.length} of {filteredBooks.length} books
-						</p>
-						<div className="flex items-center space-x-2">
-							<label htmlFor="sort" className="text-sm text-gray-600">
+					
+					{/* Quick Filters */}
+					<div className="mt-6 flex flex-wrap gap-3">
+						<button
+							onClick={() => {
+								setSelectedCategory("all");
+								setSelectedStatus("all");
+								setSearchQuery("");
+							}}
+							className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors duration-200 text-sm font-medium"
+						>
+							Clear Filters
+						</button>
+						<button
+							onClick={() => setSelectedStatus("available")}
+							className={`px-4 py-2 rounded-lg transition-colors duration-200 text-sm font-medium ${
+								selectedStatus === "available"
+									? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+									: "bg-white hover:bg-emerald-50 text-gray-700 border border-gray-200"
+							}`}
+						>
+							Available Only
+						</button>
+						<button
+							onClick={() => {
+								setSearchQuery("");
+								setSelectedCategory("all");
+								setSelectedStatus("all");
+								setSortBy("title");
+							}}
+							className="px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg transition-colors duration-200 text-sm font-medium border border-blue-200"
+						>
+							Reset All
+						</button>
+					</div>
+					
+					<div className="mt-6 flex justify-between items-center">
+						<div className="flex items-center space-x-4">
+							<p className="text-sm text-gray-600">
+								Showing <span className="font-semibold text-gray-900">{paginatedBooks.length}</span> of <span className="font-semibold text-gray-900">{filteredBooks.length}</span> books
+							</p>
+							{searchQuery && (
+								<span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+									Filtered by: "{searchQuery}"
+								</span>
+							)}
+						</div>
+						<div className="flex items-center space-x-3">
+							<label htmlFor="sort" className="text-sm text-gray-600 font-medium">
 								Sort by:
 							</label>
 							<select
 								id="sort"
 								value={sortBy}
 								onChange={(e) => setSortBy(e.target.value)}
-								className="px-3 py-1 border border-gray-400 rounded-md text-base font-semibold text-gray-900 bg-white disabled:text-gray-700 disabled:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+								className="px-3 py-2 border border-gray-200 rounded-lg text-sm text-gray-900 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
 							>
 								<option value="title">Title</option>
 								<option value="author">Author</option>
@@ -501,71 +561,133 @@ export default function AdminBooks() {
 				</div>
 
 				{/* Books Table */}
-				<div className="bg-white rounded-lg shadow overflow-hidden">
+				<div className="bg-white/70 backdrop-blur-sm rounded-xl shadow-lg border border-white/20 overflow-hidden">
+					<div className="px-6 py-4 border-b border-gray-200/50">
+						<h3 className="text-lg font-semibold text-gray-900">Book Collection</h3>
+						<p className="text-sm text-gray-600 mt-1">Manage and organize your library's books</p>
+					</div>
 					<div className="overflow-x-auto">
-						<table className="min-w-full divide-y divide-gray-200">
-							<thead className="bg-gray-50">
+						<table className="min-w-full divide-y divide-gray-200/50">
+							<thead className="bg-gradient-to-r from-gray-50 to-gray-100/50">
 								<tr>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										Book
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										Author
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										Category
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										ISBN
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										Availability
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-										Location
+									<th className="px-6 py-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+										Status
 									</th>
-									<th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+									<th className="px-6 py-4 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
 										Actions
 									</th>
 								</tr>
 							</thead>
-							<tbody className="bg-white divide-y divide-gray-200">
-							{paginatedBooks.map(book => (
-								<tr key={book.id} className="hover:bg-gray-50">
-									<td className="px-6 py-4 whitespace-nowrap">
-										<div className="flex items-center">
+							<tbody className="bg-white/50 divide-y divide-gray-200/50">
+							{paginatedBooks.map((book, index) => (
+								<tr key={book.id} className="hover:bg-white/80 transition-colors duration-200 group">
+									<td className="px-6 py-4">
+										<div className="flex items-center space-x-4">
 											<div className="flex-shrink-0 h-16 w-12">
-												  <SafeBookImage src={book.image || undefined} alt={book.title} w={48} h={64} className="h-16 w-12 object-contain bg-gray-100 rounded" />
+												<SafeBookImage 
+													src={book.image || undefined} 
+													alt={book.title} 
+													w={48} 
+													h={64} 
+													className="h-16 w-12 object-cover bg-gray-100 rounded-lg shadow-sm group-hover:shadow-md transition-shadow duration-200" 
+												/>
 											</div>
-											<div className="ml-4">
-												<div className="text-sm font-medium text-gray-900 line-clamp-2">{book.title}</div>
-												<div className="text-sm text-gray-500">{book.publishedYear ?? ''}</div>
+											<div className="min-w-0 flex-1">
+												<div className="text-sm font-semibold text-gray-900 line-clamp-2 group-hover:text-blue-600 transition-colors duration-200">
+													{book.title}
+												</div>
+												<div className="text-sm text-gray-500 mt-1">
+													{book.publishedYear && (
+														<span className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-600">
+															{book.publishedYear}
+														</span>
+													)}
+												</div>
 											</div>
 										</div>
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{book.author}</td>
-									<td className="px-6 py-4 whitespace-nowrap"><span className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">{book.category.name}</span></td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-mono">{book.isbn}</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-										<div className="flex flex-col">
-											<span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full mb-1 ${book.availableCopies > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{book.availableCopies > 0 ? 'Available' : 'Not Available'}</span>
-											<span className="text-xs text-gray-500">{book.availableCopies}/{book.totalCopies} available</span>
+									<td className="px-6 py-4 text-sm text-gray-900 font-medium">{book.author}</td>
+									<td className="px-6 py-4">
+										<span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 border border-blue-300">
+											{book.category.name}
+										</span>
+									</td>
+									<td className="px-6 py-4 text-sm text-gray-900 font-mono bg-gray-50/50 rounded-lg mx-2">
+										{book.isbn || <span className="text-gray-400 italic">No ISBN</span>}
+									</td>
+									<td className="px-6 py-4">
+										<div className="flex flex-col space-y-2">
+											<div className="flex items-center space-x-2">
+												<div className={`w-3 h-3 rounded-full ${book.availableCopies > 0 ? 'bg-emerald-400' : 'bg-red-400'}`}></div>
+												<span className={`text-sm font-medium ${book.availableCopies > 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+													{book.availableCopies > 0 ? 'Available' : 'Not Available'}
+												</span>
+											</div>
+											<span className="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded-md">
+												{book.availableCopies}/{book.totalCopies} copies
+											</span>
 										</div>
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-										<div className="text-xs text-gray-500 flex flex-col space-y-1">
-											<span>Featured: {book.isFeatured ? 'Yes' : 'No'}</span>
-											<span>Status: {book.isActive ? 'Active' : 'Inactive'}</span>
+									<td className="px-6 py-4">
+										<div className="flex flex-col space-y-2">
+											<span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+												book.isFeatured 
+													? 'bg-gradient-to-r from-yellow-100 to-amber-100 text-amber-800 border border-amber-200' 
+													: 'bg-gray-100 text-gray-600 border border-gray-200'
+											}`}>
+												{book.isFeatured ? 'Featured' : 'Regular'}
+											</span>
+											<span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${
+												book.isActive 
+													? 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border border-emerald-200' 
+													: 'bg-gradient-to-r from-red-100 to-red-100 text-red-800 border border-red-200'
+											}`}>
+												{book.isActive ? 'Active' : 'Inactive'}
+											</span>
 										</div>
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-										<div className="flex space-x-2">
-											<button onClick={() => handleEditBook(book)} aria-label="Edit book" title="Edit" className="p-2 rounded-md text-blue-600 hover:text-white hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500">
-												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.375 2.625a1.767 1.767 0 0 1 2.5 2.5L13 13l-4 1 1-4 8.375-8.375Z" /></svg>
+									<td className="px-6 py-4 text-right">
+										<div className="flex justify-end space-x-2">
+											<button 
+												onClick={() => handleEditBook(book)} 
+												aria-label="Edit book" 
+												title="Edit" 
+												className="p-2.5 rounded-xl bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 hover:scale-105 hover:shadow-md group"
+											>
+												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:scale-110 transition-transform duration-200">
+													<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+													<path d="M18.375 2.625a1.767 1.767 0 0 1 2.5 2.5L13 13l-4 1 1-4 8.375-8.375Z" />
+												</svg>
 												<span className="sr-only">Edit</span>
 											</button>
-											<button onClick={() => handleDeleteBook(book.id)} aria-label="Delete book" title="Delete" className="p-2 rounded-md text-red-600 hover:text-white hover:bg-red-600 transition-colors focus:outline-none focus:ring-2 focus:ring-red-500">
-												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4"><path d="M3 6h18" /><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" /><path d="M10 11v6" /><path d="M14 11v6" /><path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" /></svg>
+											<button 
+												onClick={() => handleDeleteBook(book.id)} 
+												aria-label="Delete book" 
+												title="Delete" 
+												className="p-2.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-600 hover:text-white transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 hover:scale-105 hover:shadow-md group"
+											>
+												<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4 group-hover:scale-110 transition-transform duration-200">
+													<path d="M3 6h18" />
+													<path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+													<path d="M10 11v6" />
+													<path d="M14 11v6" />
+													<path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14" />
+												</svg>
 												<span className="sr-only">Delete</span>
 											</button>
 										</div>
@@ -576,66 +698,109 @@ export default function AdminBooks() {
 						</table>
 					</div>
 
-					{/* Pagination */}
-					{totalPages > 1 && (
-						<div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-							<div className="flex-1 flex justify-between sm:hidden">
-								<button
-									onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-									disabled={currentPage === 1}
-									className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-								>
-									Previous
-								</button>
-								<button
-									onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-									disabled={currentPage === totalPages}
-									className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"
-								>
-									Next
-								</button>
+				{/* Pagination */}
+				{totalPages > 1 && (
+					<div className="bg-white/70 backdrop-blur-sm border-t border-gray-200/50 px-6 py-4 flex items-center justify-between">
+						<div className="flex-1 flex justify-between sm:hidden">
+							<button
+								onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+								disabled={currentPage === 1}
+								className="relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-xl text-gray-700 bg-white/80 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
+							>
+								Previous
+							</button>
+							<button
+								onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+								disabled={currentPage === totalPages}
+								className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-200 text-sm font-medium rounded-xl text-gray-700 bg-white/80 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
+							>
+								Next
+							</button>
+						</div>
+						<div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+							<div>
+								<p className="text-sm text-gray-600">
+									Showing{" "}
+									<span className="font-semibold text-gray-900">{startIndex + 1}</span> to{" "}
+									<span className="font-semibold text-gray-900">
+										{Math.min(startIndex + booksPerPage, filteredBooks.length)}
+									</span>{" "}
+									of{" "}
+									<span className="font-semibold text-gray-900">{filteredBooks.length}</span>{" "}
+									results
+								</p>
 							</div>
-							<div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-								<div>
-									<p className="text-sm text-gray-700">
-										Showing{" "}
-										<span className="font-medium">{startIndex + 1}</span> to{" "}
-										<span className="font-medium">
-											{Math.min(startIndex + booksPerPage, filteredBooks.length)}
-										</span>{" "}
-										of{" "}
-										<span className="font-medium">{filteredBooks.length}</span>{" "}
-										results
-									</p>
-								</div>
-								<div>
-									<nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px">
-										<button
-											onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
-											disabled={currentPage === 1}
-											className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-										>
-											Previous
-										</button>
-										{Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-											<button
-												key={page}
-												onClick={() => setCurrentPage(page)}
-												className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-													currentPage === page
-														? "z-10 bg-blue-50 border-blue-500 text-blue-600"
-														: "bg-white border-gray-300 text-gray-500 hover:bg-gray-50"
-												}`}
-											>
-												{page}
-											</button>
-										))}
-										<button
-											onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
-											disabled={currentPage === totalPages}
-											className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50"
-										>
-											Next
+							<div>
+								<nav className="relative z-0 inline-flex rounded-xl shadow-sm space-x-1" aria-label="Pagination">
+									<button
+										onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+										disabled={currentPage === 1}
+										className="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-200 bg-white/80 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
+									>
+										<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+										</svg>
+										<span className="ml-1">Previous</span>
+									</button>
+									
+									{/* Smart pagination with ellipsis */}
+									{(() => {
+										const delta = 2;
+										const range = [];
+										const rangeWithDots = [];
+										
+										for (let i = Math.max(2, currentPage - delta); i <= Math.min(totalPages - 1, currentPage + delta); i++) {
+											range.push(i);
+										}
+										
+										if (currentPage - delta > 2) {
+											rangeWithDots.push(1, '...');
+										} else {
+											rangeWithDots.push(1);
+										}
+										
+										rangeWithDots.push(...range);
+										
+										if (currentPage + delta < totalPages - 1) {
+											rangeWithDots.push('...', totalPages);
+										} else if (totalPages > 1) {
+											rangeWithDots.push(totalPages);
+										}
+										
+										return rangeWithDots.map((page, index) => {
+											if (page === '...') {
+												return (
+													<span key={`ellipsis-${index}`} className="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-500">
+														...
+													</span>
+												);
+											}
+											
+											return (
+												<button
+													key={page}
+													onClick={() => setCurrentPage(page as number)}
+													className={`relative inline-flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+														currentPage === page
+															? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg transform scale-105"
+															: "bg-white/80 border border-gray-200 text-gray-700 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-300"
+													}`}
+												>
+													{page}
+												</button>
+											);
+										});
+									})()}
+									
+									<button
+										onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+										disabled={currentPage === totalPages}
+										className="relative inline-flex items-center px-3 py-2 rounded-lg border border-gray-200 bg-white/80 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-all duration-200"
+									>
+										<span className="mr-1">Next</span>
+										<svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+										</svg>
 										</button>
 									</nav>
 								</div>
@@ -647,16 +812,23 @@ export default function AdminBooks() {
 
 			{/* Add Book Modal */}
 			{showAddModal && (
-				<div className="fixed inset-0 bg-black/30 backdrop-blur-sm overflow-y-auto h-full w-full z-50">
-					<div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
-						<div className="mt-3">
-							<div className="flex justify-between items-center mb-4">
-								<h3 className="text-lg font-medium text-gray-900">
-									Add New Book
-								</h3>
+				<div className="fixed inset-0 bg-gray-900/50 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+					<div className="relative bg-white/95 backdrop-blur-sm border border-white/20 w-full max-w-2xl shadow-2xl rounded-2xl">
+						<div className="p-6">
+							<div className="flex justify-between items-center mb-6">
+								<div className="flex items-center space-x-3">
+									<div className="w-10 h-10 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center">
+										<svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+											<path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+										</svg>
+									</div>
+									<h3 className="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent">
+										Add New Book
+									</h3>
+								</div>
 								<button
 									onClick={() => setShowAddModal(false)}
-									className="text-gray-400 hover:text-gray-600"
+									className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-xl transition-all duration-200"
 								>
 									<svg
 										className="w-6 h-6"
@@ -673,11 +845,11 @@ export default function AdminBooks() {
 									</svg>
 								</button>
 							</div>
-							<form className="space-y-4" onSubmit={handleAddBook}>
-								<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+							<form className="space-y-6" onSubmit={handleAddBook}>
+								<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Title *
+											Title <span className="text-red-500">*</span>
 										</label>
 										<input
 											type="text"
@@ -687,12 +859,13 @@ export default function AdminBooks() {
 											onChange={(e) =>
 												setForm({ ...form, title: e.target.value })
 											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+											className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+											placeholder="Enter book title"
 										/>
 									</div>
 									<div>
 										<label className="block text-sm font-medium text-gray-700 mb-2">
-											Author *
+											Author <span className="text-red-500">*</span>
 										</label>
 										<input
 											type="text"
@@ -702,19 +875,22 @@ export default function AdminBooks() {
 											onChange={(e) =>
 												setForm({ ...form, author: e.target.value })
 											}
-											className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
+											className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+											placeholder="Enter author name"
 										/>
 									</div>
-									{/* ISBN auto-generated on backend */}
-																		<div>
-																				<label className="block text-sm font-medium text-gray-700 mb-2">Category *</label>
-																				<select
-																					name="categoryId"
-																					value={form.categoryId || ''}
-																					onChange={(e)=> setForm({ ...form, categoryId: e.target.value })}
-																					required
-																					className="w-full px-3 py-2 border border-gray-400 rounded-md text-base text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600"
-																				>
+									
+									<div>
+										<label className="block text-sm font-medium text-gray-700 mb-2">
+											Category <span className="text-red-500">*</span>
+										</label>
+										<select
+											name="categoryId"
+											value={form.categoryId || ''}
+											onChange={(e)=> setForm({ ...form, categoryId: e.target.value })}
+											required
+											className="w-full px-4 py-3 border border-gray-200 rounded-xl text-gray-900 bg-white/80 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+										>
 																					<option value="">Select Category</option>
 																					{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
 																				</select>
@@ -756,20 +932,28 @@ export default function AdminBooks() {
 																			<textarea rows={4} value={form.description ?? ''} onChange={e=> setForm({ ...form, description: e.target.value })} className="w-full px-3 py-2 border border-gray-400 rounded-md text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-blue-600 resize-y" />
 																		</div>
 								</div>
-								<div className="flex justify-end space-x-3 pt-4">
+								<div className="flex justify-end space-x-4 pt-6">
 									<button
 										type="button"
 										onClick={() => setShowAddModal(false)}
-										className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+										className="px-6 py-3 border border-gray-200 rounded-xl text-gray-700 hover:bg-gray-50 hover:border-gray-300 transition-all duration-200 font-medium"
 									>
 										Cancel
 									</button>
 									<button
 										type="submit"
 										disabled={submitting}
-										className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed"
+										className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 font-medium shadow-lg hover:shadow-xl"
 									>
-										{submitting ? 'Adding...' : 'Add Book'}
+										{submitting ? (
+											<span className="flex items-center">
+												<svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+													<circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+													<path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+												</svg>
+												Adding...
+											</span>
+										) : 'Add Book'}
 									</button>
 								</div>
 							</form>
@@ -903,6 +1087,7 @@ export default function AdminBooks() {
 					</div>
 				</div>
 			)}
+			</div>
 		</div>
 	);
 }
