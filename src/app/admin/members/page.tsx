@@ -836,18 +836,21 @@ export default function AdminMembers() {
 			</div>
 		)}					{/* Edit Member Modal */}
 					{showEditModal && selectedMember && (
-						<div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
-							<div className="relative top-20 mx-auto p-5 border w-11/12 md:w-2/3 lg:w-1/2 shadow-lg rounded-md bg-white">
-								<div className="mt-3">
-									<div className="flex justify-between items-center mb-4">
-										<h3 className="text-lg font-medium text-gray-900">Edit Member</h3>
-										<button onClick={() => setShowEditModal(false)} className="text-gray-400 hover:text-gray-600">
+						<div className="fixed inset-0 bg-black/20 backdrop-blur-sm overflow-y-auto h-full w-full z-50 flex items-center justify-center p-4">
+							<div className="w-full max-w-2xl bg-white/95 backdrop-blur-xl shadow-2xl rounded-2xl border border-white/20 overflow-hidden"
+								onClick={(e) => e.stopPropagation()}>
+								<div className="bg-gradient-to-r from-emerald-600 to-emerald-700 px-6 py-4">
+									<div className="flex justify-between items-center">
+										<h3 className="text-xl font-bold text-white">Edit Member</h3>
+										<button onClick={() => setShowEditModal(false)} className="text-white/80 hover:text-white transition-colors">
 											<svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
 												<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
 											</svg>
 										</button>
 									</div>
-													<form className="space-y-4" onSubmit={saveEditMember}>
+								</div>
+								<div className="p-6 bg-gradient-to-br from-gray-50/50 to-white/80 backdrop-blur-sm">
+									<form className="space-y-4" onSubmit={saveEditMember}>
 										<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 															<div>
 																<label className="block text-sm font-medium text-gray-700 mb-2">Username</label>
@@ -888,33 +891,73 @@ export default function AdminMembers() {
 												/>
 											</div>
 											<div className="md:col-span-2">
-												<label className="block text-sm font-medium text-gray-700 mb-2">Address</label>
+												<label className="block text-sm font-semibold text-gray-700 mb-3">Address</label>
 												<textarea
 													rows={3}
 													value={editForm.address}
 													onChange={(e) => setEditForm(f => ({ ...f, address: e.target.value }))}
-													className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+													className="w-full px-4 py-3 bg-white/70 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500/30 focus:border-emerald-500 transition-all duration-200 hover:bg-white/90 resize-none"
+													placeholder="Enter complete address"
 												/>
 											</div>
 											<div className="md:col-span-2">
-												<label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-												<div className="flex items-center gap-4">
-													<label className="inline-flex items-center gap-2">
-														<input type="radio" name="status" checked={editForm.status === 'Active'} onChange={() => setEditForm(f => ({ ...f, status: 'Active' }))} />
-														<span>Active</span>
+												<label className="block text-sm font-semibold text-gray-700 mb-3">Member Status</label>
+												<div className="flex items-center gap-6">
+													<label className="inline-flex items-center cursor-pointer group">
+														<input 
+															type="radio" 
+															name="status" 
+															checked={editForm.status === 'Active'} 
+															onChange={() => setEditForm(f => ({ ...f, status: 'Active' }))}
+															className="w-4 h-4 text-emerald-600 bg-white border-gray-300 focus:ring-emerald-500 focus:ring-2"
+														/>
+														<span className="ml-3 text-sm font-medium text-gray-700 group-hover:text-emerald-600 transition-colors">
+															<span className="flex items-center">
+																<span className="w-2 h-2 bg-emerald-500 rounded-full mr-2"></span>
+																Active
+															</span>
+														</span>
 													</label>
-													<label className="inline-flex items-center gap-2">
-														<input type="radio" name="status" checked={editForm.status === 'Suspended'} onChange={() => setEditForm(f => ({ ...f, status: 'Suspended' }))} />
-														<span>Suspended</span>
+													<label className="inline-flex items-center cursor-pointer group">
+														<input 
+															type="radio" 
+															name="status" 
+															checked={editForm.status === 'Suspended'} 
+															onChange={() => setEditForm(f => ({ ...f, status: 'Suspended' }))}
+															className="w-4 h-4 text-amber-600 bg-white border-gray-300 focus:ring-amber-500 focus:ring-2"
+														/>
+														<span className="ml-3 text-sm font-medium text-gray-700 group-hover:text-amber-600 transition-colors">
+															<span className="flex items-center">
+																<span className="w-2 h-2 bg-amber-500 rounded-full mr-2"></span>
+																Suspended
+															</span>
+														</span>
 													</label>
 												</div>
 											</div>
 										</div>
-										<div className="flex justify-end space-x-3 pt-4">
-											<button type="button" onClick={() => setShowEditModal(false)} className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50">Cancel</button>
-											<button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700">Save Changes</button>
-										</div>
 									</form>
+								</div>
+								<div className="bg-gray-50/50 backdrop-blur-sm px-6 py-4 rounded-b-2xl border-t border-gray-200/50">
+									<div className="flex justify-end space-x-3">
+										<button 
+											type="button" 
+											onClick={() => setShowEditModal(false)} 
+											className="px-6 py-2.5 border border-gray-200 rounded-lg text-gray-700 font-medium bg-white hover:bg-gray-50 transition-all duration-200 hover:scale-105"
+										>
+											Cancel
+										</button>
+										<button 
+											type="submit" 
+											onClick={saveEditMember}
+											className="px-6 py-2.5 bg-gradient-to-r from-emerald-600 to-emerald-700 text-white rounded-lg font-medium hover:from-emerald-700 hover:to-emerald-800 transition-all duration-200 hover:scale-105 shadow-lg"
+										>
+											<svg className="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+												<path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+											</svg>
+											Save Changes
+										</button>
+									</div>
 								</div>
 							</div>
 						</div>
